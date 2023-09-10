@@ -1,18 +1,18 @@
-# RangeLibc
+# RangeLibc: Modernized
+
+> **NOTE** @maintainers (Nic/Edo): This remote points to a fork of RangeLibc on TY's personal github for now. But, creating a submodule on the git.ee servers when possible would be ideal. _(or, you can give me free GH stars)_
 
 This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
-WARNING: this is currently in a slightly weird state in preparation for 6.141 lab 5. I will try to fix up all the compile flags to work with both use cases soon.
-
 ## Building the Code
 
-The following has been tested on Ubuntu 14.04, OSX 10.10, and Ubuntu 16.06. Hopefully it will work on other systems as well, or will at least be not too difficult to fix.
+This code was built in Ubuntu 22.04 with and without GPU support.
 
 ### C++ code
 
-```
+```bash
 # clone the repository
-git clone https://github.com/kctess5/range_libc
+git clone git@github.com:tianyilim/range_libc.git
 cd range_libc
 mkdir build
 cd build
@@ -20,29 +20,13 @@ cmake ..
 make
 ```
 
-If you get an error about having the wrong version of CMake, install a version of CMake that is less than or equal to 3.6 (I use 3.6) from here: https://cmake.org/download/
-
-If you don't want to update your system's version of CMake, simply:
-
-```
-# unzip cmake download and cd into that directory
-mkdir build
-cd build
-cmake ..
-make
-# 3.6 should be your cmake version number
-sudo ln -s [path to cmake directory]/build/bin/cmake /usr/bin/cmake3.6
-```
-
-Then use cmake3.6 instead of cmake in the above instructions for building the range_lib code.
-
 ### Python Wrappers
 
 To build the code and its associated Python wrappers for use in Python code, do the following. You may have to install Cython if you do not already have it on your system.
 
-```
+```bash
 # clone the repository
-git clone https://github.com/kctess5/range_libc
+git clone git@github.com:tianyilim/range_libc.git
 cd range_libc_dist/pywrapper
 # for an in place build, do this:
 python setup.py build_ext --inplace
@@ -56,34 +40,9 @@ python test.py
 
 To see example usage of the Python wrappers (using the ROS specific helpers) see [https://github.com/mit-racecar/particle_filter](https://github.com/mit-racecar/particle_filter). See the [/docs](/docs) folder for documentation.
 
-### Building on a RACECAR
-
-MIT's 6.141 uses this library for accelerating particle filters onboard the RACECAR platform. To install this on the Jetson TX1, do:
-
-```
-# Copy the code
-cd range_libc
-# this part is not strictly necessary, but useful for debugging compilation issues
-mkdir build
-cmake ..
-make
-# To build the Python wrappers
-sudo apt-get install Cython
-cd pywrapper
-sudo WITH_CUDA=ON python setup.py install
-```
-
-## License
-
-This code is licensed under Apache 2.0. Copyright 2017 Corey H. Walsh. 
-
-You may obtain a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0
-
-Enjoy!
-
 ## Cite
 
-This library accompanies the following [publication](http://arxiv.org/abs/1705.01167).
+This repo is a modification to the original `rangelibc` [publication](http://arxiv.org/abs/1705.01167).
 
     @article{walsh17,
         author = {Corey Walsh and 
@@ -94,34 +53,7 @@ This library accompanies the following [publication](http://arxiv.org/abs/1705.0
         year   = {2017}}
 
 ## Code structure
-
-```
-range_libc_dist/
-├── build
-│   └── bin          # this is where compiled binaries will be placed
-├── CMakeLists.txt   # compilation rules - includes, etc
-├── includes
-│   ├── lru_cache.h  # implementation of LRU_cache, optionally used
-│   ├── RangeLib.h   # main RangeLib source code
-│   ├── CudaRangeLib.h # cuda function header file
-│   ├── kernels.cu   # cuda kernels for super fast 2D ray casting
-│   └── RangeUtils.h # various utility functions
-├── license.txt
-├── main.cpp         # example c++ usage and simple benchmarks
-├── make_plots.py    # turns fine-grained benchmark information into violin plots
-├── tmp/             # make this directory for saving fine-grained timing information
-├── maps             # example PNG maps
-│   └── [various .png files]
-├── pywrapper
-│   ├── RangeLibc.pyx # wrapper file for using RangeLib from Python
-│   ├── setup.py     # compilation rules for Cython
-│   └── test.py      # example Python usage
-├── README.md
-└── vendor           # various dependencies, see in here for licenses
-    ├── distance_transform.h # for computing euclidean distance transform
-    ├── gflags       # command line flag library from Google
-    └── lodepng      # simple PNG loading/saving library
-```
+`TODO`
 
 ## RangeLibc Algorithms Overview
 
