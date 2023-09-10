@@ -38,8 +38,6 @@ SET(BASEPATH "${CMAKE_SOURCE_DIR}")
 add_definitions(-DBASEPATH=${BASEPATH})
 add_subdirectory(${BASEPATH}/vendor/gflags)
 
-# message(STATUS ${BASEPATH})
-
 # Use the basepath as a search location for includes
 include_directories(${BASEPATH}/include ${BASEPATH}/vendor)
 
@@ -58,7 +56,7 @@ if(WITH_CUDA)
 
 	cuda_add_executable(range_lib ${withCudaSrcs})
 else()
-	set(GLOB noCudaSrcs
+	file(GLOB noCudaSrcs
 		src/main.cpp
 		"vendor/lodepng/lodepng.cpp")
 
