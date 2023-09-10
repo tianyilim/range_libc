@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-#include "include/RangeLib.h"
+#include "RangeLib.h"
 #include <gflags/gflags.h>
 
 #include <string>

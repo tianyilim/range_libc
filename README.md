@@ -2,6 +2,13 @@
 
 > **NOTE** @maintainers (Nic/Edo): This remote points to a fork of RangeLibc on TY's personal github for now. But, creating a submodule on the git.ee servers when possible would be ideal. _(or, you can give me free GH stars)_
 
+**Repo Roadmap**
+- [ ] Add tests
+- [ ] Add benchmark code
+- [ ] Make improvements/modernization to underlying algos
+- [ ] Update code structure
+
+---
 This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
 ## Building the Code
