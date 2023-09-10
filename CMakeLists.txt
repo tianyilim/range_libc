@@ -1,72 +1,69 @@
-PROJECT(range_lib)
+cmake_minimum_required(VERSION 3.14)
 
-# cmake_minimum_required(VERSION 2.8.0)
-cmake_minimum_required(VERSION 3.3)
+PROJECT(range_lib
+	VERSION 0.1
+	DESCRIPTION "The ForzaETH fork of the RangeLibC ray-casting library"
+	LANGUAGES CXX)
 
-file(GLOB SRCS 
-	main.cpp 
-	"vendor/lodepng/lodepng.cpp" )
-
-option(WITH_CUDA "Compile CUDA ray cast varients" ON)
-# set(CHUNK_SIZE 16384)
-# set(CHUNK_THREADS 256)
-set(CHUNK_SIZE 262144)
+# Set CMake variables here
+option(WITH_CUDA "Compile with CUDA ray cast variants" OFF)
+# These variables are for CUDA
+set(CHUNK_SIZE 262144) # this could be varied in the future
 set(CHUNK_THREADS 256)
-# set(CHUNK_SIZE 65536)
-# set(CHUNK_THREADS 256)
 
+# Things that depend on top-level building go here
+get_property(not_top DIRECTORY PROPERTY PARENT_DIRECTORY)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+if(not_top)
+	message(STATUS "RangeLibC building not in top-level build folder")
 
-SET(BASEPATH "${CMAKE_SOURCE_DIR}") 
-add_definitions ( -DBASEPATH=${BASEPATH} )
-add_subdirectory(${BASEPATH}/vendor/gflags)
-
-# Use the basepath as a search location for includes
-include_directories(${BASEPATH})
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+# TODO set equivalent output directories
 else()
-        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+	message(STATUS "RangeLibC building in top-level build folder")
+	set(CMAKE_BUILD_TYPE Release)
+
+	# This should be set alongside the top-level colcon stuff, if possible
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+	set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 endif()
 
-# set(CMAKE_CXX_FLAGS "-march=native -fverbose-asm -ffast-math -fno-math-errno -g -save-temps ${CMAKE_CXX_FLAGS}")
-# set(CMAKE_CXX_FLAGS "-march=native -ffast-math -fno-math-errno -g -rdynamic -save-temps ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-march=native -ffast-math -fno-math-errno ${CMAKE_CXX_FLAGS} -O3")
-# set(CMAKE_CXX_FLAGS "-fverbose-asm -ffast-math -fno-math-errno -save-temps ${CMAKE_CXX_FLAGS}")
-# set(CMAKE_CXX_FLAGS "-g -save-temps ${CMAKE_CXX_FLAGS}")
+set_property(GLOBAL PROPERTY CXX_STANDARD 17)
+set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED 17)
 
-set(CMAKE_BUILD_TYPE Release)
+add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-errno)
 
-if (WITH_CUDA)
+SET(BASEPATH "${CMAKE_SOURCE_DIR}")
+add_definitions(-DBASEPATH=${BASEPATH})
+add_subdirectory(${BASEPATH}/vendor/gflags)
+
+# message(STATUS ${BASEPATH})
+
+# Use the basepath as a search location for includes
+include_directories(${BASEPATH}/include ${BASEPATH}/vendor)
+
+if(WITH_CUDA)
 	add_definitions(-DUSE_CUDA=1)
 	add_definitions(-DCHUNK_SIZE=${CHUNK_SIZE})
 	add_definitions(-DNUM_THREADS=${CHUNK_THREADS})
+	set(CUDA_CUDART_LIBRARY '/usr/local/cuda/lib64/libcudart.so')
 
-	file(GLOB CUDA_SRCS 
-		main.cpp 
-		"includes/kernels.cu"
-		"vendor/lodepng/lodepng.cpp" )
+	file(GLOB withCudaSrcs
+		src/main.cpp
+		"include/kernels.cu"
+		"vendor/lodepng/lodepng.cpp")
 
-	# set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-7.5")
 	find_package(CUDA REQUIRED)
 
-	cuda_add_executable(range_lib ${CUDA_SRCS})
-	# message(${CUDA_VERSION})
-
+	cuda_add_executable(range_lib ${withCudaSrcs})
 else()
-	add_definitions(-DUSE_CUDA=0)
-	add_executable(range_lib ${SRCS})
-endif()
+	set(GLOB noCudaSrcs
+		src/main.cpp
+		"vendor/lodepng/lodepng.cpp")
 
+	add_definitions(-DUSE_CUDA=0)
+	add_executable(range_lib ${noCudaSrcs})
+endif()
 
 target_link_libraries(range_lib gflags pthread)
