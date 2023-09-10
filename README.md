@@ -4,6 +4,7 @@
 
 **Repo Roadmap**
 - [ ] Add tests
+- [ ] Instructions to compile with/without CUDA
 - [ ] Add benchmark code
 - [ ] Make improvements/modernization to underlying algos
 - [ ] Update code structure
@@ -39,7 +40,7 @@ export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64\
                          ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 
 echo 'export PATH=/usr/local/cuda-12.2/bin${PATH:+:${PATH}}' >> ~/.bashrc
-echo  'export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64 ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64 ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
 ```
 
 Now, reboot your system: `sudo reboot`
