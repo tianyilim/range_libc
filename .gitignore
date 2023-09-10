@@ -4,9 +4,6 @@ tmp/
 pywrapper/*.so
 pywrapper/*.cpp
 pywrapper/test.png
-.DS_Store
-paper/data/basement
-paper/data/synthetic
-._.*
-paper/bak
 pywrapper/watch.sh
+.DS_Store
+._.*

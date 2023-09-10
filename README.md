@@ -2,11 +2,57 @@
 
 > **NOTE** @maintainers (Nic/Edo): This remote points to a fork of RangeLibc on TY's personal github for now. But, creating a submodule on the git.ee servers when possible would be ideal. _(or, you can give me free GH stars)_
 
+**Repo Roadmap**
+- [ ] Add tests
+- [ ] Add benchmark code
+- [ ] Make improvements/modernization to underlying algos
+- [ ] Update code structure
+
+---
 This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
 ## Building the Code
 
 This code was built in Ubuntu 22.04 with and without GPU support.
+
+### Requirements
+
+For GPU support, execute the following if using Ubuntu 22.04. Taken from [Nvidia installation instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) for CUDA. Follow the guide if you have another distribution. Running these commands may take a while!
+
+```bash
+# Follow the instructions to install CUDA and dependencies
+sudo apt-get install linux-headers-$(uname -r)	# installs required linux headers for your linux version
+sudo apt-key del 7fa2af80
+
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+sudo mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda-repo-ubuntu2204-12-2-local_12.2.2-535.104.05-1_amd64.deb -O ~/Downloads/cuda_ubuntu2204-amd64.deb
+sudo dpkg -i ~/Downloads/cuda_ubuntu2204-amd64.deb
+sudo cp /var/cuda-repo-ubuntu2204-12-2-local/cuda-*-keyring.gpg /usr/share/keyrings/
+sudo apt-get update
+sudo apt-get -y install cuda
+sudo apt-get -y install nvidia-gds
+
+# Add CUDA to paths. These will also be appended to your bashrc.
+export PATH=/usr/local/cuda-12.2/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64\
+                         ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+
+echo 'export PATH=/usr/local/cuda-12.2/bin${PATH:+:${PATH}}' >> ~/.bashrc
+echo  'export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64 ${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
+```
+
+Now, reboot your system: `sudo reboot`
+
+Then, verify the installation by calling `nvcc --version`. Sample output:
+```
+$ nvcc --version
+  nvcc: NVIDIA (R) Cuda compiler driver
+  Copyright (c) 2005-2023 NVIDIA Corporation
+  Built on Tue_Aug_15_22:02:13_PDT_2023
+  Cuda compilation tools, release 12.2, V12.2.140
+  Build cuda_12.2.r12.2/compiler.33191640_0
+```
 
 ### C++ code
 

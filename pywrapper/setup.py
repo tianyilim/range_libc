@@ -12,17 +12,18 @@ except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
 def check_for_flag(flag_str, truemsg=False, falsemsg=False):
-	if flag_str in os.environ:
-	    enabled = (os.environ[flag_str].lower() == "on")
-	else:
-	    enabled = False
+    if flag_str in os.environ:
+        enabled = (os.environ[flag_str].lower() == "on")
+    else:
+        enabled = False
 
-	if enabled and not truemsg == False:
-		print truemsg
-	elif not enabled and not falsemsg == False:
-		print falsemsg
-		print "   $ sudo "+flag_str+"=ON python setup.py install"
-	return enabled
+    if enabled and not truemsg == False:
+        print(truemsg)
+    elif not enabled and not falsemsg == False:
+        print(falsemsg)
+        print("   $ sudo "+flag_str+"=ON python setup.py install")
+
+    return enabled
 
 use_cuda = check_for_flag("WITH_CUDA", \
 	"Compiling with CUDA support", \
@@ -31,9 +32,7 @@ trace    = check_for_flag("TRACE", \
 	"Compiling with trace enabled for Bresenham's Line", \
 	"Compiling without trace enabled for Bresenham's Line")
 
-print 
-print "--------------"
-print 
+print("\n--------------\n")
 
 # support for compiling in clang
 if platform.system().lower() == "darwin":
@@ -62,10 +61,10 @@ def locate_cuda():
     # print os.environ
     # first check if the CUDAHOME env variable is in use
     if os.path.isdir("/usr/local/cuda-7.5"):
-    	home = "/usr/local/cuda-7.5"
+        home = "/usr/local/cuda-7.5"
         nvcc = pjoin(home, 'bin', 'nvcc')
     elif os.path.isdir("/usr/local/cuda"):
-    	home = "/usr/local/cuda"
+        home = "/usr/local/cuda"
         nvcc = pjoin(home, 'bin', 'nvcc')
     elif 'CUDAHOME' in os.environ:
         home = os.environ['CUDAHOME']
@@ -95,7 +94,7 @@ def locate_cuda():
 compiler_flags = ["-w","-std=c++11", "-march=native", "-ffast-math", "-fno-math-errno", "-O3"]
 nvcc_flags = ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", "-w","-std=c++11"]
 include_dirs = ["../", numpy_include]
-depends = ["../includes/*.h"]
+depends = ["../include/*.h"]
 sources = ["RangeLibc.pyx","../vendor/lodepng/lodepng.cpp"]
 
 CHUNK_SIZE = "262144"
@@ -108,7 +107,7 @@ if use_cuda:
 
     CUDA = locate_cuda()
     include_dirs.append(CUDA['include'])
-    sources.append("../includes/kernels.cu")
+    sources.append("../include/kernels.cu")
 
 if trace:
 	compiler_flags.append("-D_MAKE_TRACE_MAP=1")
@@ -182,7 +181,7 @@ else:
 				extra_compile_args = compiler_flags,
 				extra_link_args = ["-std=c++11"],
 				include_dirs = include_dirs,
-				depends=["../includes/*.h"],
+				depends=["../include/*.h"],
 				language="c++",)],
 		name='range_libc',
 		author='Corey Walsh',
