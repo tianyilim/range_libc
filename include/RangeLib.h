@@ -55,7 +55,7 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #define _TRACK_COLLISION_INDEXES 0
 
 #define _EPSILON 0.00001
-#define M_2PI 6.28318530718
+#define M_2PI 2 * M_PI
 #define _BINARY_SEARCH_THRESHOLD 64  // if there are more than this number of elements in the lut bin, use binary search
 
 // fast optimized version
@@ -110,10 +110,13 @@ namespace ranges {
 /// @brief Occupancy Grid
 class OMap {
    public:
+    typedef std::vector<std::vector<bool>> Grid_t;
+    typedef std::vector<std::vector<float>> RawGrid_t;
+
     /// @brief Constructor from sizes
     /// @param[in] w width of occupancy grid
     /// @param[in] h height of occupancy grid
-    OMap(int w, int h) : _hasError(false), _width(w), _height(h), _filename("")
+    OMap(int w = 0, int h = 0) : _hasError(false), _width(w), _height(h), _filename("")
     {
         // Initializes a blank occupancy grid map.
         for (int i = 0; i < w; ++i) {
@@ -252,17 +255,22 @@ class OMap {
     }
 
     /// @brief Const view into _Grid
-    const std::vector<std::vector<bool>> &const grid() { return _Grid; }
+    const Grid_t &grid() const { return _Grid; }
+    ///@brief modifier view into _Grid
+    Grid_t &grid() { return _Grid; }
 
-   private:
-    // Members
-    bool _hasError;         ///< error flag
-    unsigned _width;        ///< x axis
-    unsigned _height;       ///< y axis
-    std::string _filename;  ///< filename of image
+    /// @brief Const view into _RawGrid
+    const RawGrid_t &rawGrid() const { return _RawGrid; }
+    ///@brief modifier view into _RawGrid
+    RawGrid_t &rawGrid() { return _RawGrid; }
 
-    std::vector<std::vector<bool>> _Grid;      ///< Grid of boolean occupied/not-occupied values
-    std::vector<std::vector<float>> _RawGrid;  ///< Grid of belief values
+    const unsigned width() const { return _width; }
+    void setWidth(unsigned w) { _width = w; }
+
+    const unsigned height() const { return _height; }
+    void setHeight(unsigned h) { _height = h; }
+
+    const std::string filename() const { return _filename; }
 
     float _worldScale;     ///< Real-world values
     float _worldAngle;     ///< Real-world values
@@ -270,103 +278,63 @@ class OMap {
     float _worldOriginY;   ///< Real-world values
     float _worldSinAngle;  ///< Real-world values
     float _worldCosAngle;  ///< Real-world values
+
+   protected:
+    // Members
+    bool _hasError;         ///< error flag
+    unsigned _width;        ///< x axis
+    unsigned _height;       ///< y axis
+    std::string _filename;  ///< filename of image
+
+    Grid_t _Grid;        ///< Grid of boolean occupied/not-occupied values
+    RawGrid_t _RawGrid;  ///< Grid of belief values
 };
 
-struct DistanceTransform {
-    unsigned width;
-    unsigned height;
-    std::vector<std::vector<float>> _Grid;
+class DistanceTransform : public OMap {
+   public:
+    /// @brief Forwards to OMap constructor
+    /// @param[in] w Occupancy grid width
+    /// @param[in] h Occupancy grid height
+    DistanceTransform(unsigned w = 0, unsigned h = 0) : OMap(w, h) {}
 
-    float getGridVal(int x, int y) { return _Grid[x][y]; }
-
-    DistanceTransform() : width(0), height(0) {}
-
-    DistanceTransform(int w, int h) : width(w), height(h)
+    ///@brief computes the distance transform of a given OMap
+    ///@param[in] map Input OMap
+    DistanceTransform(OMap &map) : OMap(map)
     {
-        // allocate space in the vectors
-        for (int i = 0; i < width; ++i) {
-            std::vector<float> y_axis;
-            for (int q = 0; q < height; ++q)
-                y_axis.push_back(1.0);
-            _Grid.push_back(y_axis);
-        }
-    }
-
-    // computes the distance transform of a given OMap
-    DistanceTransform(OMap *map)
-    {
-        width = map->_width;
-        height = map->_height;
-
-        std::vector<std::size_t> grid_size({width, height});
+        std::vector<std::size_t> grid_size({_width, _height});
         dt::MMArray<float, 2> f(grid_size.data());
         dt::MMArray<std::size_t, 2> indices(grid_size.data());
 
-        for (std::size_t i = 0; i < width; ++i)
-            for (std::size_t j = 0; j < height; ++j)
-                if (map->isOccupied(i, j))
+        for (std::size_t i = 0; i < _width; ++i) {
+            for (std::size_t j = 0; j < _height; ++j) {
+                if (map.isOccupied(i, j)) {
                     f[i][j] = 0.0f;
-                else
+                }
+                else {
                     f[i][j] = std::numeric_limits<float>::max();
+                }
+            }
+        }
 
         dt::DistanceTransform::distanceTransformL2(f, f, indices, false);
 
         // allocate space in the vectors
-        for (int i = 0; i < width; ++i) {
+        _RawGrid.clear();
+        for (int x = 0; x < _width; ++x) {
             std::vector<float> y_axis;
-            for (int q = 0; q < height; ++q)
-                y_axis.push_back(1.0);
-            _Grid.push_back(y_axis);
-        }
-
-        // store to array
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                _Grid[x][y] = f[x][y];
+            for (int y = 0; y < _height; ++y) {
+                y_axis.push_back(f[x][y]);
             }
+            _RawGrid.push_back(y_axis);
         }
-    }
-
-    bool save(std::string filename)
-    {
-        std::vector<unsigned char> png;
-        lodepng::State state;
-        char image[width * height * 4];
-
-        float scale = 0;
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                scale = std::max(_Grid[x][y], scale);
-            }
-        }
-        scale *= 1.0 / 255.0;
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                unsigned idx = 4 * y * width + 4 * x;
-                image[idx + 2] = (int)(_Grid[x][y] / scale);
-                image[idx + 1] = (int)(_Grid[x][y] / scale);
-                image[idx + 0] = (int)(_Grid[x][y] / scale);
-                image[idx + 3] = (char)255;
-            }
-        }
-        unsigned error = lodepng::encode(png, reinterpret_cast<const unsigned char *>(image), width, height, state);
-        if (!error)
-            lodepng::save_file(png, filename);
-        // if there's an error, display it
-        if (error)
-            std::cout << "encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
-        return error;
-    }
-
-    int memory()
-    {
-        return width * height * sizeof(float);
     }
 };
 
+/// @brief Parent class of all range methods
 class RangeMethod {
    public:
     RangeMethod(OMap m, float mr) : map(m), max_range(mr){};
+
     virtual ~RangeMethod(){};
 
     virtual float calc_range(float x, float y, float heading) = 0;
@@ -376,22 +344,12 @@ class RangeMethod {
     float maxRange() { return max_range; }
     float memory() { return -1; }
 
-    void saveTrace(std::string _filename)
-    {
-#if _MAKE_TRACE_MAP == 1
-        map.saveTrace(_filename);
-#else
-        std::cout << "WARNING: trace map not generated, must compile with trace support enabled." << std::endl;
-#endif
-    }
-
     // wrapper function to call calc_range repeatedly with the given array of inputs
     // and store the result to the given outputs. Useful for avoiding cython function
     // call overhead by passing it a numpy array pointer. Indexing assumes a 3xn numpy array
     // for the inputs and a 1xn numpy array of the outputs
     void numpy_calc_range(float *ins, float *outs, int num_casts)
     {
-#if ROS_WORLD_TO_GRID_CONVERSION == 1
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
         float _worldScale = map._worldScale;
@@ -411,10 +369,8 @@ class RangeMethod {
         float y;
         float temp;
         float theta;
-#endif
 
         for (int i = 0; i < num_casts; ++i) {
-#if ROS_WORLD_TO_GRID_CONVERSION == 1
             x_world = ins[i * 3];
             y_world = ins[i * 3 + 1];
             theta_world = ins[i * 3 + 2];
@@ -427,15 +383,11 @@ class RangeMethod {
             theta = -theta_world + rotation_const;
 
             outs[i] = calc_range(y, x, theta) * _worldScale;
-#else
-            outs[i] = calc_range(ins[i * 3], ins[i * 3 + 1], ins[i * 3 + 2]);
-#endif
         }
     }
 
     void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles, int num_angles)
     {
-#if ROS_WORLD_TO_GRID_CONVERSION == 1
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
         float _worldScale = map._worldScale;
@@ -454,7 +406,6 @@ class RangeMethod {
         float y;
         float temp;
         float theta;
-#endif
 
         for (int i = 0; i < num_particles; ++i) {
             x_world = ins[i * 3];
@@ -510,7 +461,6 @@ class RangeMethod {
     // calc range for each pose, adding every angle, evaluating the sensor model
     void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs, double *weights, int num_particles, int num_angles)
     {
-#if ROS_WORLD_TO_GRID_CONVERSION == 1
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
         float _worldScale = map._worldScale;
@@ -560,14 +510,12 @@ class RangeMethod {
             }
             weights[i] = weight;
         }
-#endif
     }
 
     // this is to compute a lidar sensor model using radial (calc_range_pair) optimizations
     // this is only exact for a certain set of downsample amounts
     void calc_range_many_radial_optimized(float *ins, float *outs, int num_particles, int num_rays, float min_angle, float max_angle)
     {
-#if ROS_WORLD_TO_GRID_CONVERSION == 1
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
         float _worldScale = map._worldScale;
@@ -621,7 +569,6 @@ class RangeMethod {
                 angle += step;
             }
         }
-#endif
         return;
     }
 
@@ -731,10 +678,8 @@ class RayMarchingGPU : public RangeMethod {
 #if USE_CUDA == 1
         rmc = new RayMarchingCUDA(distImage->_Grid, distImage->width, distImage->height, max_range);
 
-#if ROS_WORLD_TO_GRID_CONVERSION == 1
         rmc->set_conversion_params(m._worldScale, m._worldAngle, m._worldOriginX, m._worldOriginY,
                                    m._worldSinAngle, m._worldCosAngle);
-#endif
 
 #else
         throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");
@@ -795,10 +740,6 @@ class RayMarchingGPU : public RangeMethod {
     void numpy_calc_range(float *ins, float *outs, int num_casts)
     {
 #if USE_CUDA == 1
-#if ROS_WORLD_TO_GRID_CONVERSION == 0
-        std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
-        return;
-#endif
         maybe_warn(num_casts);
         int iters = std::ceil((float)num_casts / (float)CHUNK_SIZE);
         for (int i = 0; i < iters; ++i) {
@@ -815,10 +756,6 @@ class RayMarchingGPU : public RangeMethod {
     void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles, int num_angles)
     {
 #if USE_CUDA == 1
-#if ROS_WORLD_TO_GRID_CONVERSION == 0
-        std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
-        return;
-#endif
 
         int particles_per_iter = std::ceil((float)CHUNK_SIZE / (float)num_angles);
         int iters = std::ceil((float)num_particles / (float)particles_per_iter);
@@ -854,10 +791,6 @@ class RayMarchingGPU : public RangeMethod {
     void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs, double *weights, int num_particles, int num_angles)
     {
 #if USE_CUDA == 1
-#if ROS_WORLD_TO_GRID_CONVERSION == 0
-        std::cout << "Cannot use GPU numpy_calc_range without ROS_WORLD_TO_GRID_CONVERSION == 1" << std::endl;
-        return;
-#endif
 
         int particles_per_iter = std::ceil((float)CHUNK_SIZE / (float)num_angles);
         int iters = std::ceil((float)num_particles / (float)particles_per_iter);
@@ -1906,6 +1839,7 @@ class GiantLUTCast : public RangeMethod {
 #endif
     std::vector<std::vector<std::vector<lut_t>>> giant_lut;
 };
+
 }  // namespace ranges
 
 namespace benchmark {
