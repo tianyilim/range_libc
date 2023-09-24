@@ -233,7 +233,7 @@ class OMap {
 
                     std::tie(cx, cy) = outline[i];
                     if (0 <= cx && 0 <= cy && cx < _width && cy < _height && !isOccupied(cx, cy)) {
-                        edge_map._Grid[x][y] = true;
+                        edge_map.grid()[x][y] = true;
                         break;
                     }
                 }
@@ -338,10 +338,15 @@ class RangeMethod {
     virtual ~RangeMethod(){};
 
     virtual float calc_range(float x, float y, float heading) = 0;
+
     virtual std::pair<float, float> calc_range_pair(float x, float y, float heading) { return std::make_pair(-1, -1); }
+
     virtual OMap *getMap() { return &map; }
+
     virtual void report(){};
+
     float maxRange() { return max_range; }
+
     float memory() { return -1; }
 
     // wrapper function to call calc_range repeatedly with the given array of inputs
@@ -435,6 +440,7 @@ class RangeMethod {
             sensor_model.push_back(table_row);
         }
     }
+
     void eval_sensor_model(float *obs, float *ranges, double *outs, int rays_per_particle, int particles)
     {
         float inv_world_scale = 1.0 / map._worldScale;
@@ -637,8 +643,8 @@ class BresenhamsLine : public RangeMethod {
         if (y0 < y1)
             ystep = 1;
 
-        unsigned width = map._width;
-        unsigned height = map._height;
+        unsigned width = map.width();
+        unsigned height = map.height();
 
         while ((int)_x != (int)(x1 + xstep)) {
             _x += xstep;
@@ -674,9 +680,9 @@ class RayMarchingGPU : public RangeMethod {
    public:
     RayMarchingGPU(OMap m, float mr) : RangeMethod(m, mr)
     {
-        distImage = new DistanceTransform(&m);
+        distImage = new DistanceTransform(m);
 #if USE_CUDA == 1
-        rmc = new RayMarchingCUDA(distImage->_Grid, distImage->width, distImage->height, max_range);
+        rmc = new RayMarchingCUDA(distImage->grid(), distImage->width, distImage->height, max_range);
 
         rmc->set_conversion_params(m._worldScale, m._worldAngle, m._worldOriginX, m._worldOriginY,
                                    m._worldSinAngle, m._worldCosAngle);
@@ -819,7 +825,7 @@ class RayMarchingGPU : public RangeMethod {
 
 class RayMarching : public RangeMethod {
    public:
-    RayMarching(OMap m, float mr) : RangeMethod(m, mr) { distImage = DistanceTransform(&m); }
+    RayMarching(OMap m, float mr) : RangeMethod(m, mr) { distImage = DistanceTransform(m); }
 
     float ANIL calc_range(float x, float y, float heading)
     {
@@ -837,11 +843,11 @@ class RayMarching : public RangeMethod {
             px = x0 + ray_direction_x * t;
             py = y0 + ray_direction_y * t;
 
-            if (px >= map._width || px < 0 || py < 0 || py >= map._height) {
+            if (px >= map.width() || px < 0 || py < 0 || py >= map.height()) {
                 return max_range;
             }
 
-            float d = distImage.getGridVal(px, py);
+            float d = distImage.isOccupied(px, py);
 
 #if _MAKE_TRACE_MAP == 1
             map.isOccupied(px, py);  // this makes a dot appear in the trace map
@@ -905,9 +911,9 @@ class CDDTCast : public RangeMethod {
 // compute the height of the axis aligned bounding box, which will determine
 // the necessary width of the lookup table for this angle
 #if _USE_CACHED_TRIG == 1
-            float rotated_height = std::abs(map._width * sinfangle) + std::abs(map._height * cosfangle);
+            float rotated_height = std::abs(map.width() * sinfangle) + std::abs(map.height() * cosfangle);
 #else
-            float rotated_height = std::abs(map._width * sinf(angle)) + std::abs(map._height * cosf(angle));
+            float rotated_height = std::abs(map.width() * sinf(angle)) + std::abs(map.height() * cosf(angle));
 #endif
             unsigned int lut_width = ceil(rotated_height - _EPSILON);
             lut_widths.push_back(lut_width);
@@ -942,13 +948,13 @@ class CDDTCast : public RangeMethod {
 
 // this is the y-coordinate for each non-origin corner
 #if _USE_CACHED_TRIG == 1
-            float left_top_corner_y = map._height * cosfangle;
-            float right_top_corner_y = map._width * sinfangle + map._height * cosfangle;
-            float right_bottom_corner_y = map._width * sinfangle;
+            float left_top_corner_y = map.height() * cosfangle;
+            float right_top_corner_y = map.width() * sinfangle + map.height() * cosfangle;
+            float right_bottom_corner_y = map.width() * sinfangle;
 #else
-            float left_top_corner_y = map._height * cosf(angle);
-            float right_top_corner_y = map._width * sinf(angle) + map._height * cosf(angle);
-            float right_bottom_corner_y = map._width * sinf(angle);
+            float left_top_corner_y = map.height() * cosf(angle);
+            float right_top_corner_y = map.width() * sinf(angle) + map.height() * cosf(angle);
+            float right_bottom_corner_y = map.width() * sinf(angle);
 #endif
 
             // find the lowest corner, and determine the translation necessary to make them all positive
@@ -977,8 +983,8 @@ class CDDTCast : public RangeMethod {
 
         // fill the LUT datastructure by projecting each occupied pixel into LUT space and storing
         // the x position in LUT space at the correct place as determined by y position and theta
-        for (int x = 0; x < map._width; ++x) {
-            for (int y = 0; y < map._height; ++y) {
+        for (int x = 0; x < map.width(); ++x) {
+            for (int y = 0; y < map.height(); ++y) {
                 // if (map.isOccupied(x,y)) {
                 if (edge_map.isOccupied(x, y)) {
                     // this (x,y) is occupied, so add it to the datastruture
@@ -1104,9 +1110,9 @@ class CDDTCast : public RangeMethod {
             float lut_space_y;
             unsigned int lut_index;
             std::vector<float> *lut_bin;
-            for (int x = 0; x < map._Grid.size(); ++x) {
+            for (int x = 0; x < map.grid().size(); ++x) {
                 float _x = 0.5 + x;
-                for (int y = 0; y < map._Grid[0].size(); ++y) {
+                for (int y = 0; y < map.grid()[0].size(); ++y) {
                     float _y = 0.5 + y;
                     lut_space_x = _x * cosangle - _y * sinangle;
                     lut_space_y = (_x * sinangle + _y * cosangle) + translation;
@@ -1121,7 +1127,7 @@ class CDDTCast : public RangeMethod {
                     // there are no entries in this lut bin
                     if (high == -1)
                         continue;
-                    if (map._Grid[x][y])
+                    if (map.grid()[x][y])
                         continue;
 
                     // the furthest entry is behind the query point
@@ -1314,7 +1320,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map._Grid[x][y]) {
+            if (map.grid()[x][y]) {
                 return 0.0;
             }
 
@@ -1379,7 +1385,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map._Grid[x][y]) {
+            if (map.grid()[x][y]) {
                 return 0.0;
             }
 
@@ -1467,7 +1473,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map._Grid[x][y]) {
+            if (map.grid()[x][y]) {
                 return std::make_pair(0.0, 0.0);
             }
 
@@ -1525,7 +1531,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map._Grid[x][y]) {
+            if (map.grid()[x][y]) {
                 std::make_pair(0.0, 0.0);
             }
 
@@ -1581,13 +1587,13 @@ class CDDTCast : public RangeMethod {
         (*ss) << T1 << "max_range: " << max_range << std::endl;
         (*ss) << T1 << "map: " << std::endl;
         (*ss) << T2 << "# note: map data is width and then height (width is number of rows) transposed from expectation:" << std::endl;
-        (*ss) << T2 << "path: " << map._filename << std::endl;
-        (*ss) << T2 << "width: " << map._width << std::endl;
-        (*ss) << T2 << "height: " << map._height << std::endl;
+        (*ss) << T2 << "path: " << map.filename() << std::endl;
+        (*ss) << T2 << "width: " << map.width() << std::endl;
+        (*ss) << T2 << "height: " << map.height() << std::endl;
         (*ss) << T2 << "data: " << std::endl;
-        for (int i = 0; i < map._width; ++i) {
+        for (int i = 0; i < map.width(); ++i) {
             (*ss) << T3 << "- ";
-            utils::serialize(map._Grid[i], ss);
+            utils::serialize(map.grid()[i], ss);
             (*ss) << std::endl;
         }
         (*ss) << T1 << "compressed_lut: " << std::endl;
@@ -1624,15 +1630,15 @@ class CDDTCast : public RangeMethod {
         (*ss) << J1 << "\"max_range\":" << max_range << "," << std::endl;
         (*ss) << J1 << "\"map\": {" << std::endl;
         // (*ss) << J2 << "# note: map data is width and then height (width is number of rows) transposed from expectation:"  << std::endl;
-        (*ss) << J2 << "\"path\": \"" << map._filename << "\"," << std::endl;
-        (*ss) << J2 << "\"width\": " << map._width << "," << std::endl;
-        (*ss) << J2 << "\"height\": " << map._height << "," << std::endl;
+        (*ss) << J2 << "\"path\": \"" << map.filename() << "\"," << std::endl;
+        (*ss) << J2 << "\"width\": " << map.width() << "," << std::endl;
+        (*ss) << J2 << "\"height\": " << map.height() << "," << std::endl;
 
-        (*ss) << J2 << "\"data\": [";  // utils::serialize(map._Grid[0], ss);
-        for (int i = 0; i < map._width; ++i) {
+        (*ss) << J2 << "\"data\": [";  // utils::serialize(map.grid()[0], ss);
+        for (int i = 0; i < map.width(); ++i) {
             if (i > 0)
                 (*ss) << ",";
-            utils::serialize(map._Grid[i], ss);
+            utils::serialize(map.grid()[i], ss);
         }
         (*ss) << "]," << std::endl;
         (*ss) << J1 << "}," << std::endl;
@@ -1718,9 +1724,9 @@ class GiantLUTCast : public RangeMethod {
         RayMarching seed_cast = RayMarching(m, mr);
         // CDDTCast seed_cast = CDDTCast(m, mr, td);
 
-        for (int x = 0; x < m._width; ++x) {
+        for (int x = 0; x < m.width(); ++x) {
             std::vector<std::vector<lut_t>> lut_slice;
-            for (int y = 0; y < m._height; ++y) {
+            for (int y = 0; y < m.height(); ++y) {
                 std::vector<lut_t> lut_row;
                 for (int i = 0; i < theta_discretization; ++i) {
 #if _USE_CACHED_CONSTANTS
@@ -1754,7 +1760,7 @@ class GiantLUTCast : public RangeMethod {
 
     int lut_size()
     {
-        return map._width * map._height * theta_discretization * sizeof(lut_t);
+        return map.width() * map.height() * theta_discretization * sizeof(lut_t);
     }
 
     int memory() { return lut_size(); }
@@ -1801,7 +1807,7 @@ class GiantLUTCast : public RangeMethod {
 
     float ANIL calc_range(float x, float y, float heading)
     {
-        if (x < 0 || x >= map._width || y < 0 || y >= map._height)
+        if (x < 0 || x >= map.width() || y < 0 || y >= map.height())
             return max_range;
 #if _GIANT_LUT_SHORT_DATATYPE
 #if _USE_CACHED_CONSTANTS
@@ -1823,7 +1829,7 @@ class GiantLUTCast : public RangeMethod {
 
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
-                slice->_Grid[x][y] = giant_lut[x][y][dtheta];
+                slice->grid()[x][y] = giant_lut[x][y][dtheta];
             }
         }
         return slice;
@@ -1874,8 +1880,8 @@ class Benchmark {
 
         for (int i = 0; i < num_rays; ++i) {
             float angle = i * coeff;
-            for (int x = 0; x < map->_width; x += step_size) {
-                for (int y = 0; y < map->_height; y += step_size) {
+            for (int x = 0; x < map->width(); x += step_size) {
+                for (int y = 0; y < map->height(); y += step_size) {
                     auto start_time = std::chrono::high_resolution_clock::now();
                     for (int j = 0; j < samples; ++j) {
                         volatile float r = range.calc_range(x, y, angle);
@@ -1914,10 +1920,10 @@ class Benchmark {
         if (log)
             (*log) << std::setprecision(9);
 
-        int num_samples = num_grid_samples(step_size, num_rays, samples, map->_width, map->_height);
+        int num_samples = num_grid_samples(step_size, num_rays, samples, map->width(), map->height());
         float *samps = new float[num_samples * 3];
         float *outs = new float[num_samples];
-        get_grid_samples(samps, step_size, num_rays, samples, map->_width, map->_height);
+        get_grid_samples(samps, step_size, num_rays, samples, map->width(), map->height());
 
         auto start_time = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < num_samples; ++i)
@@ -1971,8 +1977,8 @@ class Benchmark {
     {
         std::default_random_engine generator;
         generator.seed(clock());
-        std::uniform_real_distribution<float> randx = std::uniform_real_distribution<float>(1.0, map->_width - 1.0);
-        std::uniform_real_distribution<float> randy = std::uniform_real_distribution<float>(1.0, map->_height - 1.0);
+        std::uniform_real_distribution<float> randx = std::uniform_real_distribution<float>(1.0, map->width() - 1.0);
+        std::uniform_real_distribution<float> randy = std::uniform_real_distribution<float>(1.0, map->height() - 1.0);
         std::uniform_real_distribution<float> randt = std::uniform_real_distribution<float>(0.0, M_2PI);
 
         double t_accum = 0;
