@@ -60,7 +60,6 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 
 // fast optimized version
 #define _USE_CACHED_TRIG 0
-#define _USE_ALTERNATE_MOD 1
 #define _USE_CACHED_CONSTANTS 1
 #define _USE_FAST_ROUND 0
 #define _NO_INLINE 0
@@ -429,7 +428,6 @@ class RangeMethod {
         }
     }
 
-#if SENSOR_MODEL_HELPERS == 1
     void set_sensor_model(double *table, int table_width)
     {
         // convert the sensor model from a numpy array to a vector array
@@ -446,14 +444,11 @@ class RangeMethod {
         float inv_world_scale = 1.0 / map._worldScale;
         // do no allocations in the main loop
         double weight;
-        float r;
-        float d;
-        int i;
-        int j;
+        float r, d;
 
-        for (i = 0; i < particles; ++i) {
+        for (int i = 0; i < particles; ++i) {
             weight = 1.0;
-            for (j = 0; j < rays_per_particle; ++j) {
+            for (int j = 0; j < rays_per_particle; ++j) {
                 r = obs[j] * inv_world_scale;
                 r = std::min<float>(std::max<float>(r, 0.0), (float)sensor_model.size() - 1.0);
                 d = ranges[i * rays_per_particle + j] * inv_world_scale;
@@ -578,15 +573,11 @@ class RangeMethod {
         return;
     }
 
-#endif
-
    protected:
     OMap map;
     float max_range;
 
-#if SENSOR_MODEL_HELPERS == 1
     std::vector<std::vector<double>> sensor_model;
-#endif
 };
 
 class BresenhamsLine : public RangeMethod {
@@ -1192,23 +1183,10 @@ class CDDTCast : public RangeMethod {
     // as well as the bin index that the given theta falls into
     std::tuple<int, float, bool> discretize_theta(float theta)
     {
-#if _USE_ALTERNATE_MOD
-        if (theta < 0.0) {
-            while (theta < 0.0) {
-                theta += M_2PI;
-            }
-        }
-        else if (theta > M_2PI) {
-            while (theta > M_2PI) {
-                theta -= M_2PI;
-            }
-        }
-#else
         theta = fmod(theta, M_2PI);
         // fmod does not wrap the angle into the positive range, so this will fix that if necessary
         if (theta < 0.0)
             theta += M_2PI;
-#endif
 
         // exploit rotational symmetry by wrapping the theta range around to the range 0:pi
         bool is_flipped = false;
@@ -1713,137 +1691,121 @@ class GiantLUTCast : public RangeMethod {
     typedef float lut_t;
 #endif
 
-    GiantLUTCast(OMap m, float mr, int td) : theta_discretization(td), RangeMethod(m, mr)
+    /// @brief Returns a LUT index based on the discretized inputs
+    inline size_t getLutIdx(size_t x, size_t y, size_t theta)
     {
-#if _USE_CACHED_CONSTANTS
-        theta_discretization_div_M_2PI = theta_discretization / M_2PI;
-        M_2PI_div_theta_discretization = M_2PI / ((float)theta_discretization);
-        max_div_limits = max_range / std::numeric_limits<uint16_t>::max();
-        limits_div_max = std::numeric_limits<uint16_t>::max() / max_range;
-#endif
-        RayMarching seed_cast = RayMarching(m, mr);
-        // CDDTCast seed_cast = CDDTCast(m, mr, td);
+        return theta +
+               y * _thetaDiscretization +
+               x * _thetaDiscretization * _height;
+    }
 
-        for (int x = 0; x < m.width(); ++x) {
-            std::vector<std::vector<lut_t>> lut_slice;
-            for (int y = 0; y < m.height(); ++y) {
-                std::vector<lut_t> lut_row;
-                for (int i = 0; i < theta_discretization; ++i) {
-#if _USE_CACHED_CONSTANTS
-                    float angle = i * M_2PI_div_theta_discretization;
-#else
-                    float angle = M_2PI * i / theta_discretization;
-#endif
+    /// @brief Constructor.
+    /// @param[in] m Input Occupancy Grid Map
+    /// @param[in] mr Max range
+    /// @param[in] td theta discretization
+    GiantLUTCast(OMap m, float mr, int td) : _height{m.height()},
+                                             _width{m.width()},
+                                             _thetaDiscretization{td},
+                                             RangeMethod(m, mr),
+                                             _thetaDiscretization_div_M_2PI{(float)_thetaDiscretization / M_2PI},
+                                             _M_2PI_div_thetaDiscretization{M_2PI / (float)_thetaDiscretization},
+                                             _maxDivLimits{max_range / std::numeric_limits<uint16_t>::max()},
+                                             _limitsDivMax{std::numeric_limits<uint16_t>::max() / max_range}
+    {
+        // To initalize the LUT, use Ray Marching
+        RayMarching seed_cast = RayMarching(m, mr);
+
+        _GiantLUT.resize(_height * _width * _thetaDiscretization);
+        for (int x = 0; x < _width; ++x) {
+            for (int y = 0; y < _height; ++y) {
+                for (int i = 0; i < _thetaDiscretization; ++i) {
+                    float angle = i * _M_2PI_div_thetaDiscretization;
                     float r = seed_cast.calc_range(x, y, angle);
 
 #if _GIANT_LUT_SHORT_DATATYPE
                     r = std::min(max_range, r);
-#if _USE_CACHED_CONSTANTS
-                    uint16_t val = r * limits_div_max;
+                    uint16_t val = r * _limitsDivMax;
+                    _GiantLUT[getLutIdx(x, y, i)] = val;
 #else
-                    uint16_t val = (r / max_range) * std::numeric_limits<uint16_t>::max();
-#endif
-                    lut_row.push_back(val);
-#else
-                    lut_row.push_back(r);
+                    _GiantLUT[getLutIdx(x, y, i)] = r;
 #endif
                 }
-                lut_slice.push_back(lut_row);
             }
-            giant_lut.push_back(lut_slice);
         }
-
-#if _TRACK_LUT_SIZE
-        std::cout << "LUT SIZE (MB): " << lut_size() / 1000000.0 << std::endl;
-#endif
     }
 
     int lut_size()
     {
-        return map.width() * map.height() * theta_discretization * sizeof(lut_t);
+        return map.width() * map.height() * _thetaDiscretization * sizeof(lut_t);
     }
 
     int memory() { return lut_size(); }
 
-    // takes a continuous theta space and returns the nearest theta in the discrete LUT space
-    // as well as the bin index that the given theta falls into
+    /// @brief takes a continuous theta space and returns the nearest theta in the discrete LUT space
+    /// as well as the bin index that the given theta falls into
+    /// @param[in] theta the angle
+    /// @return the discretized value
     int discretize_theta(float theta)
     {
-#if _USE_ALTERNATE_MOD
-        if (theta < 0.0) {
-            while (theta < 0.0) {
-                theta += M_2PI;
-            }
-        }
-        else if (theta > M_2PI) {
-            while (theta > M_2PI) {
-                theta -= M_2PI;
-            }
-        }
-#else
         theta = fmod(theta, M_2PI);
         // fmod does not wrap the angle into the positive range, so this will fix that if necessary
         if (theta < 0.0)
             theta += M_2PI;
-#endif
 
-#if _USE_CACHED_CONSTANTS == 1
 #if _USE_FAST_ROUND == 1
-        int rounded = int(theta * theta_discretization_div_M_2PI + 0.5);
+        int rounded = int(theta * _thetaDiscretization_div_M_2PI + 0.5);
 #else
-        int rounded = (int)roundf(theta * theta_discretization_div_M_2PI);
+        int rounded = (int)roundf(theta * _thetaDiscretization_div_M_2PI);
 #endif
-        int binned = rounded % theta_discretization;
-#else
-#if _USE_FAST_ROUND == 1
-        int rounded = int((theta * theta_discretization / M_2PI) + 0.5);
-#else
-        int rounded = (int)roundf(theta * theta_discretization / M_2PI);
-#endif
-        int binned = rounded % theta_discretization;
-#endif
+        int binned = rounded % _thetaDiscretization;
+
         return binned;
     }
 
     float ANIL calc_range(float x, float y, float heading)
     {
-        if (x < 0 || x >= map.width() || y < 0 || y >= map.height())
+        if (x < 0 || x >= map.width() || y < 0 || y >= map.height()) {
             return max_range;
+        }
+
+        size_t idx = getLutIdx((size_t)x, (size_t)y, discretize_theta(heading));
 #if _GIANT_LUT_SHORT_DATATYPE
-#if _USE_CACHED_CONSTANTS
-        return giant_lut[(int)x][(int)y][discretize_theta(heading)] * max_div_limits;
+        return _GiantLUT[idx] * _maxDivLimits;
 #else
-        return max_range * giant_lut[(int)x][(int)y][discretize_theta(heading)] / std::numeric_limits<uint16_t>::max();
-#endif
-#else
-        return giant_lut[(int)x][(int)y][discretize_theta(heading)];
+        return _GiantLUT[idx];
 #endif
     }
 
-    DistanceTransform *get_slice(float theta)
+    /// @brief Returns a slice of the LUT based on a theta value
+    /// @param[in] theta the slice value
+    /// @return a DistanceTransform unique_ptr
+    std::unique_ptr<DistanceTransform> get_slice(float theta)
     {
-        int width = giant_lut.size();
-        int height = giant_lut[0].size();
-        DistanceTransform *slice = new DistanceTransform(width, height);
-        int dtheta = discretize_theta(theta);
+        std::unique_ptr<DistanceTransform> slice = std::make_unique<DistanceTransform>(_width, _height);
+        const int dtheta = discretize_theta(theta);
 
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                slice->grid()[x][y] = giant_lut[x][y][dtheta];
+        size_t idx = dtheta;  // iterator index
+
+        for (int x = 0; x < _width; ++x) {
+            for (int y = 0; y < _height; ++y) {
+                slice->grid()[x][y] = _GiantLUT[idx];
+                idx += _thetaDiscretization;
             }
+            idx += _thetaDiscretization * _height;
         }
+
         return slice;
     }
 
    protected:
-    int theta_discretization;
-#if _USE_CACHED_CONSTANTS
-    float theta_discretization_div_M_2PI;
-    float M_2PI_div_theta_discretization;
-    float max_div_limits;
-    float limits_div_max;
-#endif
-    std::vector<std::vector<std::vector<lut_t>>> giant_lut;
+    const int _height, _width;                   ///< dimensions of omap
+    const int _thetaDiscretization;              ///< how many values of theta are inside
+    const float _thetaDiscretization_div_M_2PI;  ///< theta_discretization / 2pi
+    const float _M_2PI_div_thetaDiscretization;  ///< 2pi / theta_discretization
+    const float _maxDivLimits;                   ///< Max range / uint16_t max
+    const float _limitsDivMax;                   ///< uint16_t max / Max range
+
+    std::vector<lut_t> _GiantLUT;  ///< actual LUT
 };
 
 }  // namespace ranges

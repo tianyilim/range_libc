@@ -9,6 +9,60 @@
 - [ ] Make improvements/modernization to underlying algos
 - [ ] Update code structure
 
+## Changes from original `rangelibc`:
+- Modifying GLT to use a 1D vector instead of 3D vector
+- Test method: Modify the headers in `RangeLib.h`, run the built exectuable:
+	`./range_lib -map_path ../../maps/basement_fixed.png -method glt -which_benchmark grid`
+- Original timing, using `uint16_t` LUT:
+	```
+	...Loading range method: GiantLUTCast
+	...lut size (MB): 348.129
+	...construction time: 3.88341
+	...Running grid benchmark
+	finished grid sample after: 0.106878 sec
+	-avg time per ray: 1.35079e-07 sec
+	-rays cast: 676000
+	-total time: 0.0913132 sec
+	```
+- Original timing, using `float` LUT:
+    ```
+	...Loading range method: GiantLUTCast
+	...lut size (MB): 696.259
+	...construction time: 3.84431
+	...Running grid benchmark
+	finished grid sample after: 0.114181 sec
+	-avg time per ray: 1.4495e-07 sec
+	-rays cast: 676000
+	-total time: 0.0979861 sec
+	```
+- Modified timing, using `uint16_t` LUT:
+	```
+	...Loading range method: GiantLUTCast
+	...lut size (MB): 348.129
+	...construction time: 3.36884
+	...Running grid benchmark
+	finished grid sample after: 0.092248 sec
+	-avg time per ray: 1.13772e-07 sec
+	-rays cast: 676000
+	-total time: 0.0769099 sec
+	```
+
+- Modified timing, using `float` LUT:
+	```
+	...Loading range method: GiantLUTCast
+	...lut size (MB): 696.259
+	...construction time: 3.29234
+	...Running grid benchmark
+	finished grid sample after: 0.112021 sec
+	-avg time per ray: 1.39633e-07 sec
+	-rays cast: 676000
+	-total time: 0.0943918 sec
+	```
+
+As can be seen, 1D indexing is faster! It will therefore be used moving forward.
+
+What remains to be seen is whether the `float` datatype makes a difference in actual performance.
+
 ---
 This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
