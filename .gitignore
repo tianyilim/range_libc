@@ -7,3 +7,5 @@ pywrapper/test.png
 pywrapper/watch.sh
 .DS_Store
 ._.*
+
+.vscode

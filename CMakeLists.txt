@@ -7,20 +7,21 @@ PROJECT(range_lib
 
 # Set CMake variables here
 option(WITH_CUDA "Compile with CUDA ray cast variants" OFF)
+
 # These variables are for CUDA
 set(CHUNK_SIZE 262144) # this could be varied in the future
 set(CHUNK_THREADS 256)
 
+set(CMAKE_BUILD_TYPE Release)
+
 # Things that depend on top-level building go here
 get_property(not_top DIRECTORY PROPERTY PARENT_DIRECTORY)
 
+# In the end not needed, Rangelibc was able to build @ top level
 if(not_top)
 	message(STATUS "RangeLibC building not in top-level build folder")
-
-# TODO set equivalent output directories
 else()
 	message(STATUS "RangeLibC building in top-level build folder")
-	set(CMAKE_BUILD_TYPE Release)
 
 	# This should be set alongside the top-level colcon stuff, if possible
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -34,12 +35,9 @@ set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED 17)
 
 add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-errno)
 
-SET(BASEPATH "${CMAKE_SOURCE_DIR}")
-add_definitions(-DBASEPATH=${BASEPATH})
-add_subdirectory(${BASEPATH}/vendor/gflags)
+add_subdirectory(vendor/gflags)
 
-# Use the basepath as a search location for includes
-include_directories(${BASEPATH}/include ${BASEPATH}/vendor)
+include_directories(include vendor)
 
 if(WITH_CUDA)
 	add_definitions(-DUSE_CUDA=1)
