@@ -1,0 +1,9 @@
+paper/
+build/
+tmp/
+pywrapper/*.so
+pywrapper/*.cpp
+pywrapper/test.png
+pywrapper/watch.sh
+.DS_Store
+._.*
