@@ -14,21 +14,9 @@
 * limitations under the License.
 */
 
-/*
-Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8c04017f2/libs/slam/include/mrpt/slam/PF_implementations.h
-
-    - collision avoidance http://users.isy.liu.se/en/rt/fredrik/reports/01SPpf4pos.pdf
-    - σMCL http://www.roboticsproceedings.org/rss01/p49.pdf
-    - nifty heuristic to figure out when localization is lost
-            https://www.deutsche-digitale-bibliothek.de/binary/6WAGERZFR4H4PREZXILJRER6N7XDVX3H/full/1.pdf
-    - http://www.cs.cmu.edu/~16831-f14/notes/F11/16831_lecture04_tianyul.pdf
-    - https://april.eecs.umich.edu/pdfs/olson2009icra.pdf
-*/
-
 #ifndef RANGE_LIB_H
 #define RANGE_LIB_H
 
-#include <stdio.h> /* printf */
 #include <time.h>
 #include <unistd.h>
 
@@ -76,13 +64,6 @@ Useful Links: https://github.com/MRPT/mrpt/blob/4137046479222f3a71b5c00aee1d5fa8
 #include "include/lru_cache.h"
 #endif
 
-// No inline
-#if _NO_INLINE == 1
-#define ANIL __attribute__((noinline))
-#else
-#define ANIL
-#endif
-
 // these defines are for yaml/JSON serialization
 #define T1 "  "
 #define T2 T1 T1
@@ -115,7 +96,7 @@ class OMap {
     /// @brief Constructor from sizes
     /// @param[in] w width of occupancy grid
     /// @param[in] h height of occupancy grid
-    OMap(int w = 0, int h = 0) : _hasError(false), _width(w), _height(h), _filename("")
+    OMap(unsigned w = 0, unsigned h = 0) : _hasError{false}, _width{w}, _height{h}, _filename{""}
     {
         // Initializes a blank occupancy grid map.
         for (int i = 0; i < w; ++i) {
@@ -178,6 +159,7 @@ class OMap {
             return _OccupancyGrid[x][y];
     }
 
+    // TODO this should be moved
     /// @brief Returns the signed distance value at x, y
     inline float signedDistanceValue(int x, int y)
     {
@@ -273,8 +255,10 @@ class OMap {
     const unsigned height() const { return _height; }
     void setHeight(unsigned h) { _height = h; }
 
-    const std::string filename() const { return _filename; }
+    /// @brief filename accessor
+    const std::string &filename() const { return _filename; }
 
+    // TODO these should be added to some sort of struct with getter/setter
     float _worldScale;     ///< Real-world values
     float _worldAngle;     ///< Real-world values
     float _worldOriginX;   ///< Real-world values
@@ -284,13 +268,15 @@ class OMap {
 
    protected:
     // Members
-    bool _hasError;         ///< error flag
+    bool _hasError;  ///< error flag
+    // TODO this should be removed
     unsigned _width;        ///< x axis
     unsigned _height;       ///< y axis
     std::string _filename;  ///< filename of image
 
     Grid_t _OccupancyGrid;      ///< Grid of boolean occupied/not-occupied values
     RawGrid_t _SignedDistFunc;  ///< Signed Distance Function
+    // TODO This should be moved to the DistanceTransform subclass as it is not used
 };
 
 class DistanceTransform : public OMap {
@@ -348,9 +334,9 @@ class RangeMethod {
 
     virtual void report(){};
 
-    float maxRange() { return max_range; }
+    float maxRange() const { return max_range; }
 
-    float memory() { return -1; }
+    float memory() const { return -1; }
 
     // wrapper function to call calc_range repeatedly with the given array of inputs
     // and store the result to the given outputs. Useful for avoiding cython function
@@ -578,7 +564,7 @@ class RangeMethod {
     }
 
    protected:
-    OMap map;
+    OMap map;  // TODO perhaps dont store an OMap and a DistanceTransform simultaneously. Or just store a DistanceTransform?
     float max_range;
 
     std::vector<std::vector<double>> sensor_model;
@@ -588,7 +574,7 @@ class BresenhamsLine : public RangeMethod {
    public:
     BresenhamsLine(OMap m, float mr) : RangeMethod(m, mr){};
 
-    float ANIL calc_range(float x, float y, float heading)
+    float calc_range(float x, float y, float heading)
     {
         // first check if the cell underneath the query point is occupied, if so return
         if (map.isOccupied((int)x, (int)y)) {
@@ -825,7 +811,7 @@ class RayMarching : public RangeMethod {
         _distImage = DistanceTransform(m);
     }
 
-    float ANIL calc_range(const float x, const float y, const float heading)
+    float calc_range(const float x, const float y, const float heading)
     {
         float ray_direction_x = cosf(heading);
         float ray_direction_y = sinf(heading);
@@ -1224,7 +1210,7 @@ class CDDTCast : public RangeMethod {
         return std::make_tuple(binned, discrete_angle, is_flipped);
     }
 
-    float ANIL calc_range(float x, float y, float heading)
+    float calc_range(float x, float y, float heading)
     {
 #if _USE_LRU_CACHE
         int theta_key = (int)roundf(heading * theta_discretization_div_M_2PI);
@@ -1761,7 +1747,7 @@ class GiantLUTCast : public RangeMethod {
         return binned;
     }
 
-    float ANIL calc_range(float x, float y, float heading)
+    float calc_range(float x, float y, float heading)
     {
         if (x < 0 || x >= map.width() || y < 0 || y >= map.height()) {
             return max_range;
