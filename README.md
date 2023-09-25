@@ -4,10 +4,21 @@
 
 **Repo Roadmap**
 - [ ] Add tests
+  - [ ] Test individual functions within each class / rangemethod
+  - [ ] OMap and DistanceTransform need some toy input to be tested
+- [ ] Refactor OMap class, needs some thought
+- [ ] Split the different range methods into different files
+
 - [ ] Instructions to compile with/without CUDA
 - [ ] Add benchmark code
 - [ ] Make improvements/modernization to underlying algos
 - [ ] Update code structure
+
+## Testing Instructions
+1. From directory root: `cmake -S . -B build` This configures the CMakeLists.
+2. From directory root: `cmake --build build` This builds.
+3. From `build/bin`: Run the relevant test targets.
+
 
 ## Changes from original `rangelibc`:
 - Modifying GLT to use a 1D vector instead of 3D vector
