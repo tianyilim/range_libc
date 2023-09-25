@@ -5,12 +5,24 @@ PROJECT(range_lib
 	DESCRIPTION "The ForzaETH fork of the RangeLibC ray-casting library"
 	LANGUAGES CXX)
 
+# GoogleTest min C++ version is 17
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Set CMake variables here
 option(WITH_CUDA "Compile with CUDA ray cast variants" OFF)
 
 # These variables are for CUDA
 set(CHUNK_SIZE 262144) # this could be varied in the future
 set(CHUNK_THREADS 256)
+
+# Fetch GoogleTest
+include(FetchContent)
+FetchContent_Declare(
+	googletest
+	URL https://github.com/google/googletest/archive/5376968f6948923e2411081fd9372e71a59d8e77.zip
+)
+FetchContent_MakeAvailable(googletest)
 
 set(CMAKE_BUILD_TYPE Release)
 
@@ -30,13 +42,9 @@ else()
 	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 endif()
 
-set_property(GLOBAL PROPERTY CXX_STANDARD 17)
-set_property(GLOBAL PROPERTY CXX_STANDARD_REQUIRED 17)
-
 add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-errno)
 
 add_subdirectory(vendor/gflags)
-
 include_directories(include vendor)
 
 if(WITH_CUDA)
@@ -63,3 +71,17 @@ else()
 endif()
 
 target_link_libraries(range_lib gflags pthread)
+
+# Testing only
+enable_testing()
+
+add_executable(
+	test_rangelib
+	test/test_start.cpp
+	test/test_omap.cpp
+)
+target_link_libraries(
+	test_rangelib
+	GTest::gtest_main
+)
+include(GoogleTest)
