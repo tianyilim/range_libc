@@ -122,7 +122,7 @@ class OMap {
             std::vector<bool> y_axis;
             for (int q = 0; q < h; ++q)
                 y_axis.push_back(false);
-            _Grid.push_back(y_axis);
+            _OccupancyGrid.push_back(y_axis);
         }
     }
 
@@ -145,14 +145,14 @@ class OMap {
             std::vector<bool> y_axis;
             for (int q = 0; q < _height; ++q)
                 y_axis.push_back(false);
-            _Grid.push_back(y_axis);
+            _OccupancyGrid.push_back(y_axis);
         }
 
         for (int i = 0; i < _width; ++i) {
             std::vector<float> y_axis;
             for (int q = 0; q < _height; ++q)
                 y_axis.push_back(0);
-            _RawGrid.push_back(y_axis);
+            _SignedDistFunc.push_back(y_axis);
         }
 
         for (int y = 0; y < _height; ++y) {
@@ -163,22 +163,28 @@ class OMap {
                 int b = image[idx + 0];
                 int gray = (int)utils::rgb2gray(r, g, b);
                 if (gray < threshold)
-                    _Grid[x][y] = true;
-                _RawGrid[x][y] = gray;
+                    _OccupancyGrid[x][y] = true;
+                _SignedDistFunc[x][y] = gray;
             }
         }
     }
 
-    /// @brief Return the occupancy of the _Grid at x, y
-    /// @param[in] x indices
-    /// @param[in] y indices
-    /// @return boolean value
+    /// @brief Return the occupancy at x, y
     inline bool isOccupied(int x, int y)
     {
         if (x < 0 || x >= _width || y < 0 || y >= _height)
             return false;
         else
-            return _Grid[x][y];
+            return _OccupancyGrid[x][y];
+    }
+
+    /// @brief Returns the signed distance value at x, y
+    inline float signedDistanceValue(int x, int y)
+    {
+        if (x < 0 || x >= _width || y < 0 || y >= _height)
+            return -1;  // this should throw
+        else
+            return _SignedDistFunc[x][y];
     }
 
     /// @brief Save map to an image file
@@ -199,7 +205,7 @@ class OMap {
                 image[idx + 0] = (char)255;
                 image[idx + 3] = (char)255;
 
-                if (_Grid[x][y]) {
+                if (_OccupancyGrid[x][y]) {
                     image[idx + 0] = 0;
                     image[idx + 1] = 0;
                     image[idx + 2] = 0;
@@ -253,15 +259,13 @@ class OMap {
         return _hasError;
     }
 
-    /// @brief Const view into _Grid
-    const Grid_t &grid() const { return _Grid; }
-    ///@brief modifier view into _Grid
-    Grid_t &grid() { return _Grid; }
+    ///@brief modifier view into _OccupancyGrid
+    Grid_t &grid() { return _OccupancyGrid; }
 
-    /// @brief Const view into _RawGrid
-    const RawGrid_t &rawGrid() const { return _RawGrid; }
-    ///@brief modifier view into _RawGrid
-    RawGrid_t &rawGrid() { return _RawGrid; }
+    /// @brief Const view into _SignedDistFunc
+    const RawGrid_t &rawGrid() const { return _SignedDistFunc; }
+    ///@brief modifier view into _SignedDistFunc
+    RawGrid_t &rawGrid() { return _SignedDistFunc; }
 
     const unsigned width() const { return _width; }
     void setWidth(unsigned w) { _width = w; }
@@ -285,8 +289,8 @@ class OMap {
     unsigned _height;       ///< y axis
     std::string _filename;  ///< filename of image
 
-    Grid_t _Grid;        ///< Grid of boolean occupied/not-occupied values
-    RawGrid_t _RawGrid;  ///< Grid of belief values
+    Grid_t _OccupancyGrid;      ///< Grid of boolean occupied/not-occupied values
+    RawGrid_t _SignedDistFunc;  ///< Signed Distance Function
 };
 
 class DistanceTransform : public OMap {
@@ -318,13 +322,13 @@ class DistanceTransform : public OMap {
         dt::DistanceTransform::distanceTransformL2(f, f, indices, false);
 
         // allocate space in the vectors
-        _RawGrid.clear();
+        _SignedDistFunc.clear();
         for (int x = 0; x < _width; ++x) {
             std::vector<float> y_axis;
             for (int y = 0; y < _height; ++y) {
                 y_axis.push_back(f[x][y]);
             }
-            _RawGrid.push_back(y_axis);
+            _SignedDistFunc.push_back(y_axis);
         }
     }
 };
@@ -816,52 +820,47 @@ class RayMarchingGPU : public RangeMethod {
 
 class RayMarching : public RangeMethod {
    public:
-    RayMarching(OMap m, float mr) : RangeMethod(m, mr) { distImage = DistanceTransform(m); }
-
-    float ANIL calc_range(float x, float y, float heading)
+    RayMarching(OMap m, float mr) : RangeMethod(m, mr)
     {
-        float x0 = x;
-        float y0 = y;
+        _distImage = DistanceTransform(m);
+    }
 
+    float ANIL calc_range(const float x, const float y, const float heading)
+    {
         float ray_direction_x = cosf(heading);
         float ray_direction_y = sinf(heading);
 
-        int px = 0;
-        int py = 0;
+        int px, py;
 
         float t = 0.0;
         while (t < max_range) {
-            px = x0 + ray_direction_x * t;
-            py = y0 + ray_direction_y * t;
+            px = x + ray_direction_x * t;
+            py = y + ray_direction_y * t;
 
             if (px >= map.width() || px < 0 || py < 0 || py >= map.height()) {
                 return max_range;
             }
 
-            float d = distImage.isOccupied(px, py);
+            float d = _distImage.signedDistanceValue(px, py);
 
-#if _MAKE_TRACE_MAP == 1
-            map.isOccupied(px, py);  // this makes a dot appear in the trace map
-#endif
-
-            if (d <= distThreshold) {
-                float xd = px - x0;
-                float yd = py - y0;
+            if (d <= _distThreshold) {
+                float xd = px - x;
+                float yd = py - y;
                 return sqrtf(xd * xd + yd * yd);
             }
 
-            t += std::max<float>(d * step_coeff, 1.0);
+            t += std::max<float>(d * _stepCoeff, 1.0);
         }
 
         return max_range;
     }
 
-    int memory() { return distImage.memory(); }
+    int memory() { return _distImage.memory(); }
 
    protected:
-    DistanceTransform distImage;
-    float distThreshold = 0.0;
-    float step_coeff = 0.999;
+    DistanceTransform _distImage;
+    float _distThreshold = 0.0;
+    float _stepCoeff = 0.999;
 };
 
 class CDDTCast : public RangeMethod {
@@ -1118,7 +1117,7 @@ class CDDTCast : public RangeMethod {
                     // there are no entries in this lut bin
                     if (high == -1)
                         continue;
-                    if (map.grid()[x][y])
+                    if (map.isOccupied(x, y))
                         continue;
 
                     // the furthest entry is behind the query point
@@ -1298,7 +1297,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map.grid()[x][y]) {
+            if (map.isOccupied(x, y)) {
                 return 0.0;
             }
 
@@ -1363,7 +1362,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map.grid()[x][y]) {
+            if (map.isOccupied(x, y)) {
                 return 0.0;
             }
 
@@ -1451,7 +1450,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map.grid()[x][y]) {
+            if (map.isOccupied(x, y)) {
                 return std::make_pair(0.0, 0.0);
             }
 
@@ -1509,7 +1508,7 @@ class CDDTCast : public RangeMethod {
             // the query point is on top of a occupied pixel
             // this call is here rather than at the beginning, because it is apparently more efficient.
             // I presume that this has to do with the previous two return statements
-            if (map.grid()[x][y]) {
+            if (map.isOccupied(x, y)) {
                 std::make_pair(0.0, 0.0);
             }
 
