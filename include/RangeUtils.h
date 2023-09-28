@@ -40,6 +40,7 @@ float rgb2gray(float r, float g, float b)
     return 0.229 * r + 0.587 * g + 0.114 * b;
 }
 
+/// @brief Random value within range
 int randrange(int min, int max)
 {
     return min + (rand() % (int)(max - min + 1));
@@ -244,7 +245,7 @@ void serialize(std::vector<bool> &vals, std::stringstream *ss)
         return;
     }
     (*ss) << "[" << vals[0];
-    for (int i = 1; i < vals.size(); ++i) {
+    for (size_t i = 1; i < vals.size(); ++i) {
         (*ss) << "," << vals[i];
     }
     (*ss) << "]";
@@ -257,7 +258,7 @@ void serialize(std::vector<float> &vals, std::stringstream *ss)
         return;
     }
     (*ss) << "[" << vals[0];
-    for (int i = 1; i < vals.size(); ++i) {
+    for (size_t i = 1; i < vals.size(); ++i) {
         (*ss) << "," << vals[i];
     }
     (*ss) << "]";

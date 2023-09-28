@@ -11,30 +11,40 @@
 
 namespace ranges {
 
+struct WorldValues {
+    float worldScale;
+    float worldAngle;
+    float worldOriginX;
+    float worldOriginY;
+    float worldSinAngle;
+    float worldCosAngle;
+};
+
 /// @brief Occupancy Grid
 class OMap {
    public:
     using Grid_t = std::vector<std::vector<bool>>;
-    using RawGrid_t = std::vector<std::vector<float>>;
+    using DistanceFunction_t = std::vector<std::vector<float>>;
 
-    /// @brief Constructor from sizes
+    /// @brief Constructs empty map from sizes
     /// @param[in] w width of occupancy grid
     /// @param[in] h height of occupancy grid
-    OMap(unsigned w = 0, unsigned h = 0) : _hasError{false}, _width{w}, _height{h}, _filename{""}
+    OMap(unsigned w = 0, unsigned h = 0) : _width{w}, _height{h}, _filename{""}
     {
         // Initializes a blank occupancy grid map.
-        for (int i = 0; i < w; ++i) {
+        for (unsigned i = 0; i < w; ++i) {
             std::vector<bool> y_axis;
-            for (int q = 0; q < h; ++q)
+            for (unsigned q = 0; q < h; ++q) {
                 y_axis.push_back(false);
+            }
             _OccupancyGrid.push_back(y_axis);
         }
     }
 
-    /// @brief Constructor from an image file and belief threshold
+    /// @brief Constructor from an image file
     /// @param[in] filename path to the image file
-    /// @param[in] threshold
-    OMap(std::string filename, float threshold = 128) : _hasError(false), _filename(filename)
+    /// @param[in] threshold occupancy threshold
+    OMap(std::string filename, float threshold = 128) : _filename(filename)
     {
         unsigned error;
         unsigned char *image;
@@ -42,68 +52,54 @@ class OMap {
         error = lodepng_decode32_file(&image, &_width, &_height, filename.c_str());
         if (error) {
             std::cerr << "ERROR " << error << lodepng_error_text(error) << std::endl;
-            _hasError = true;
-            return;
+            throw std::runtime_error("LodePng Error");
         }
 
-        for (int i = 0; i < _width; ++i) {
+        // Initialize blank occupancy grid map
+        for (unsigned i = 0; i < _width; ++i) {
             std::vector<bool> y_axis;
-            for (int q = 0; q < _height; ++q)
+            for (unsigned q = 0; q < _height; ++q) {
                 y_axis.push_back(false);
+            }
             _OccupancyGrid.push_back(y_axis);
         }
 
-        for (int i = 0; i < _width; ++i) {
-            std::vector<float> y_axis;
-            for (int q = 0; q < _height; ++q)
-                y_axis.push_back(0);
-            _SignedDistFunc.push_back(y_axis);
-        }
-
-        for (int y = 0; y < _height; ++y) {
-            for (int x = 0; x < _width; ++x) {
+        for (unsigned y = 0; y < _height; ++y) {
+            for (unsigned x = 0; x < _width; ++x) {
                 unsigned idx = 4 * y * _width + 4 * x;
                 int r = image[idx + 2];
                 int g = image[idx + 1];
                 int b = image[idx + 0];
                 int gray = (int)utils::rgb2gray(r, g, b);
-                if (gray < threshold)
-                    _OccupancyGrid[x][y] = true;
-                _SignedDistFunc[x][y] = gray;
+
+                // Threshold determines occupancy
+                _OccupancyGrid[x][y] = gray < threshold;
             }
         }
     }
 
     /// @brief Return the occupancy at x, y
-    inline bool isOccupied(int x, int y)
+    inline bool isOccupied(int x, int y) const
     {
-        if (x < 0 || x >= _width || y < 0 || y >= _height)
-            return false;
+        if (x < 0 || x >= int(_width) || y < 0 || y >= int(_height))
+            throw std::invalid_argument("invalid x/y argument to occupancy grid");
         else
             return _OccupancyGrid[x][y];
     }
 
-    // TODO this should be moved
-    /// @brief Returns the signed distance value at x, y
-    inline float signedDistanceValue(int x, int y)
-    {
-        if (x < 0 || x >= _width || y < 0 || y >= _height)
-            return -1;  // this should throw
-        else
-            return _SignedDistFunc[x][y];
-    }
-
     /// @brief Save map to an image file
     /// @param[in] filename
-    /// @return error code
+    /// @return If there was an error.
     bool save(std::string &filename)
     {
         std::vector<unsigned char> png;
         lodepng::State state;  // optionally customize this one
-        char image[_width * _height * 4];
 
-        for (int y = 0; y < _height; ++y) {
-            for (int x = 0; x < _width; ++x) {
+        char *image;
+        image = new char[_width * _height * 4];
+
+        for (unsigned y = 0; y < _height; ++y) {
+            for (unsigned x = 0; x < _width; ++x) {
                 unsigned idx = 4 * y * _width + 4 * x;
 
                 image[idx + 2] = (char)255;
@@ -111,7 +107,7 @@ class OMap {
                 image[idx + 0] = (char)255;
                 image[idx + 3] = (char)255;
 
-                if (_OccupancyGrid[x][y]) {
+                if (isOccupied(x, y)) {
                     image[idx + 0] = 0;
                     image[idx + 1] = 0;
                     image[idx + 2] = 0;
@@ -119,6 +115,8 @@ class OMap {
             }
         }
         unsigned error = lodepng::encode(png, reinterpret_cast<const unsigned char *>(image), _width, _height, state);
+        delete[] image;
+
         if (!error)
             lodepng::save_file(png, filename);
         else
@@ -129,21 +127,21 @@ class OMap {
 
     /// @brief Creates an edge map from the existing OMap
     /// @param[in] count_corners
-    /// @return
+    /// @return Edge Map
     OMap makeEdgeMap(bool count_corners)
     {
         OMap edge_map = OMap(_width, _height);
-        for (int x = 0; x < _width; ++x) {
-            for (int y = 0; y < _height; ++y) {
+        for (unsigned x = 0; x < _width; ++x) {
+            for (unsigned y = 0; y < _height; ++y) {
                 if (!isOccupied(x, y))
                     continue;
 
                 std::vector<std::pair<int, int>> outline = utils::outline(x, y, count_corners);
-                for (int i = 0; i < outline.size(); ++i) {
+                for (size_t i = 0; i < outline.size(); ++i) {
                     int cx, cy;
 
                     std::tie(cx, cy) = outline[i];
-                    if (0 <= cx && 0 <= cy && cx < _width && cy < _height && !isOccupied(cx, cy)) {
+                    if (0 <= cx && 0 <= cy && cx < int(_width) && cy < int(_height) && !isOccupied(cx, cy)) {
                         edge_map.grid()[x][y] = true;
                         break;
                     }
@@ -154,53 +152,38 @@ class OMap {
     }
 
     /// @brief returns memory usage in bytes
-    inline int memory()
+    inline int memory() const
     {
         return sizeof(bool) * _width * _height;
-    }
-
-    /// @brief error accessor
-    inline bool error()
-    {
-        return _hasError;
     }
 
     ///@brief modifier view into _OccupancyGrid
     Grid_t &grid() { return _OccupancyGrid; }
 
-    /// @brief Const view into _SignedDistFunc
-    const RawGrid_t &rawGrid() const { return _SignedDistFunc; }
-    ///@brief modifier view into _SignedDistFunc
-    RawGrid_t &rawGrid() { return _SignedDistFunc; }
+    unsigned width() const { return _width; }
+    void setWidth(const unsigned w) { _width = w; }
 
-    const unsigned width() const { return _width; }
-    void setWidth(unsigned w) { _width = w; }
-
-    const unsigned height() const { return _height; }
-    void setHeight(unsigned h) { _height = h; }
+    unsigned height() const { return _height; }
+    void setHeight(const unsigned h) { _height = h; }
 
     /// @brief filename accessor
     const std::string &filename() const { return _filename; }
 
-    // TODO these should be added to some sort of struct with getter/setter
-    float _worldScale;     ///< Real-world values
-    float _worldAngle;     ///< Real-world values
-    float _worldOriginX;   ///< Real-world values
-    float _worldOriginY;   ///< Real-world values
-    float _worldSinAngle;  ///< Real-world values
-    float _worldCosAngle;  ///< Real-world values
+    /// @brief World values const view
+    const WorldValues &worldValues() const { return _worldValues; }
+    /// @brief World values modifier view
+    WorldValues &worldValues() { return _worldValues; }
+    /// @brief setter function for _worldValues
+    void setWorldValues(const WorldValues &wv) { _worldValues = wv; }
 
    protected:
     // Members
-    bool _hasError;  ///< error flag
-    // TODO this should be removed
     unsigned _width;        ///< x axis
     unsigned _height;       ///< y axis
     std::string _filename;  ///< filename of image
 
-    Grid_t _OccupancyGrid;      ///< Grid of boolean occupied/not-occupied values
-    RawGrid_t _SignedDistFunc;  ///< Signed Distance Function
-    // TODO This should be moved to the DistanceTransform subclass as it is not used
+    Grid_t _OccupancyGrid;     ///< Grid of boolean occupied/not-occupied values
+    WorldValues _worldValues;  ///< Real world parameters of the map
 };
 
 class DistanceTransform : public OMap {
@@ -208,7 +191,17 @@ class DistanceTransform : public OMap {
     /// @brief Forwards to OMap constructor
     /// @param[in] w Occupancy grid width
     /// @param[in] h Occupancy grid height
-    DistanceTransform(unsigned w = 0, unsigned h = 0) : OMap(w, h) {}
+    DistanceTransform(unsigned w = 0, unsigned h = 0) : OMap(w, h)
+    {
+        // ensure that _SDF has the same dimension as OMap
+        for (unsigned i = 0; i < w; ++i) {
+            std::vector<float> y_axis;
+            for (unsigned q = 0; q < h; ++q) {
+                y_axis.push_back(0);
+            }
+            _SDF.push_back(y_axis);
+        }
+    }
 
     ///@brief computes the distance transform of a given OMap
     ///@param[in] map Input OMap
@@ -232,15 +225,34 @@ class DistanceTransform : public OMap {
         dt::DistanceTransform::distanceTransformL2(f, f, indices, false);
 
         // allocate space in the vectors
-        _SignedDistFunc.clear();
-        for (int x = 0; x < _width; ++x) {
+        _SDF.clear();
+        for (unsigned x = 0; x < _width; ++x) {
             std::vector<float> y_axis;
-            for (int y = 0; y < _height; ++y) {
+            for (unsigned y = 0; y < _height; ++y) {
                 y_axis.push_back(f[x][y]);
             }
-            _SignedDistFunc.push_back(y_axis);
+            _SDF.push_back(y_axis);
         }
     }
+
+    /// @brief Returns the signed distance value at x, y
+    inline float signedDistanceValue(int x, int y) const
+    {
+        if (x < 0 || x >= int(_width) || y < 0 || y >= int(_height)) {
+            throw std::invalid_argument("invalid x/y argument to signed distance function");
+        }
+        else
+            return _SDF[x][y];
+    }
+
+    /// @brief Const view into _SignedDistFunc
+    const DistanceFunction_t &SDF() const { return _SDF; }
+
+    ///@brief modifier view into _SignedDistFunc
+    DistanceFunction_t &SDF() { return _SDF; }
+
+   private:
+    DistanceFunction_t _SDF;
 };
 
 }  // namespace ranges
