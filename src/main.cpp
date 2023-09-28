@@ -16,7 +16,9 @@
 
 #include <gflags/gflags.h>
 
+#include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -90,7 +92,8 @@ int main(int argc, char *argv[])
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     std::cout << "Running RangeLib benchmarks" << std::endl;
-    OMap map = OMap(1, 1);
+
+    OMap map = OMap();
     if (FLAGS_map_path == "BASEMENT_MAP") {
 #ifdef BASEPATH
         std::cout << "...Loading map" << std::endl;
@@ -106,9 +109,6 @@ int main(int argc, char *argv[])
     else {
         map = OMap(FLAGS_map_path);
     }
-
-    // DistanceTransform dt = DistanceTransform(&map);
-    // dt.save("./test.png");
 
     bool DO_LOG = (FLAGS_log_path != "");
     std::stringstream tlog;
