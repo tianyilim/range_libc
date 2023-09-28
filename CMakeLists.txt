@@ -47,41 +47,43 @@ add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-
 add_subdirectory(vendor/gflags)
 include_directories(include vendor)
 
-if(WITH_CUDA)
-	add_definitions(-DUSE_CUDA=1)
-	add_definitions(-DCHUNK_SIZE=${CHUNK_SIZE})
-	add_definitions(-DNUM_THREADS=${CHUNK_THREADS})
-	set(CUDA_CUDART_LIBRARY '/usr/local/cuda/lib64/libcudart.so')
+add_library(lodepng_lib
+	vendor/lodepng/lodepng.cpp
+)
 
-	file(GLOB withCudaSrcs
-		src/main.cpp
-		"include/kernels.cu"
-		"vendor/lodepng/lodepng.cpp")
+# if(WITH_CUDA)
+# add_definitions(-DUSE_CUDA=1)
+# add_definitions(-DCHUNK_SIZE=${CHUNK_SIZE})
+# add_definitions(-DNUM_THREADS=${CHUNK_THREADS})
+# set(CUDA_CUDART_LIBRARY '/usr/local/cuda/lib64/libcudart.so')
 
-	find_package(CUDA REQUIRED)
+# file(GLOB withCudaSrcs
+# src/main.cpp
+# "include/kernels.cu")
 
-	cuda_add_executable(range_lib ${withCudaSrcs})
-else()
-	file(GLOB noCudaSrcs
-		src/main.cpp
-		"vendor/lodepng/lodepng.cpp")
+# find_package(CUDA REQUIRED)
 
-	add_definitions(-DUSE_CUDA=0)
-	add_executable(range_lib ${noCudaSrcs})
-endif()
+# cuda_add_executable(range_lib ${withCudaSrcs})
+# else()
+# file(GLOB noCudaSrcs
+# src/main.cpp)
 
-target_link_libraries(range_lib gflags pthread)
+# add_definitions(-DUSE_CUDA=0)
+# add_executable(range_lib ${noCudaSrcs})
+# endif()
+
+# target_link_libraries(range_lib gflags pthread lodepng_lib)
 
 # Testing only
 enable_testing()
 
 add_executable(
 	test_rangelib
-	test/test_start.cpp
 	test/test_omap.cpp
 )
 target_link_libraries(
 	test_rangelib
+	lodepng_lib
 	GTest::gtest_main
 )
 include(GoogleTest)
