@@ -15,6 +15,11 @@ class RayMarching : public RangeMethod {
 
     float calc_range(const float x, const float y, const float heading) const override
     {
+        // early exit
+        if (x < 0 || x >= _distTransform.width() || y < 0 || y >= _distTransform.height()) {
+            return _maxRange;
+        }
+
         float ray_direction_x = cosf(heading);
         float ray_direction_y = sinf(heading);
 
