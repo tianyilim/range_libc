@@ -79,9 +79,9 @@ class OMap {
     }
 
     /// @brief Return the occupancy at x, y
-    inline bool isOccupied(int x, int y) const
+    inline bool isOccupied(unsigned x, unsigned y) const
     {
-        if (x < 0 || x >= int(_width) || y < 0 || y >= int(_height))
+        if (x >= _width || y >= _height)
             throw std::invalid_argument("invalid x/y argument to occupancy grid");
         else
             return _OccupancyGrid[x][y];
@@ -90,7 +90,7 @@ class OMap {
     /// @brief Save map to an image file
     /// @param[in] filename
     /// @return If there was an error.
-    bool save(std::string &filename)
+    bool save(const std::string &filename)
     {
         std::vector<unsigned char> png;
         lodepng::State state;  // optionally customize this one
@@ -114,34 +114,41 @@ class OMap {
                 }
             }
         }
-        unsigned error = lodepng::encode(png, reinterpret_cast<const unsigned char *>(image), _width, _height, state);
+        unsigned error = lodepng::encode(png, reinterpret_cast<const unsigned char *>(image),
+                                         _width, _height, state);
         delete[] image;
 
         if (!error)
             lodepng::save_file(png, filename);
         else
-            std::cerr << "Image encoder error " << error << ": " << lodepng_error_text(error) << std::endl;
+            std::cerr << "Image encoder error " << error << ": " << lodepng_error_text(error)
+                      << std::endl;
 
         return error;
     }
 
-    /// @brief Creates an edge map from the existing OMap
-    /// @param[in] count_corners
+    /// @brief Creates an edge map from the existing OMap. An Edge Map sets occupancy to be 1 only
+    /// at edges.
+    /// @param[in] count_corners if corners of candidate points should be included in the edge map
     /// @return Edge Map
-    OMap makeEdgeMap(bool count_corners)
+    OMap makeEdgeMap(bool count_corners = true)
     {
         OMap edge_map = OMap(_width, _height);
+
         for (unsigned x = 0; x < _width; ++x) {
             for (unsigned y = 0; y < _height; ++y) {
-                if (!isOccupied(x, y))
-                    continue;
+                if (!isOccupied(x, y)) continue;
 
+                // candidate outlines
                 std::vector<std::pair<int, int>> outline = utils::outline(x, y, count_corners);
                 for (size_t i = 0; i < outline.size(); ++i) {
                     int cx, cy;
 
                     std::tie(cx, cy) = outline[i];
-                    if (0 <= cx && 0 <= cy && cx < int(_width) && cy < int(_height) && !isOccupied(cx, cy)) {
+
+                    // A point is an edge if it is within bounds and not
+                    if (0 <= cx && 0 <= cy && cx < int(_width) && cy < int(_height) &&
+                        !isOccupied(cx, cy)) {
                         edge_map.grid()[x][y] = true;
                         break;
                     }
@@ -152,10 +159,7 @@ class OMap {
     }
 
     /// @brief returns memory usage in bytes
-    inline int memory() const
-    {
-        return sizeof(bool) * _width * _height;
-    }
+    virtual inline int memory() const { return sizeof(bool) * _width * _height; }
 
     ///@brief modifier view into _OccupancyGrid
     Grid_t &grid() { return _OccupancyGrid; }
@@ -236,13 +240,24 @@ class DistanceTransform : public OMap {
     }
 
     /// @brief Returns the signed distance value at x, y
-    inline float signedDistanceValue(int x, int y) const
+    inline float signedDistanceValue(unsigned x, unsigned y) const
     {
-        if (x < 0 || x >= int(_width) || y < 0 || y >= int(_height)) {
+        if (x >= _width || y >= _height) {
             throw std::invalid_argument("invalid x/y argument to signed distance function");
         }
-        else
+        else {
             return _SDF[x][y];
+        }
+    }
+
+    /// @brief Returns the memory usage of the DistanceTransform object.
+    /// @return Sum of Occupancy Grid memory and SDF memory.
+    inline int memory() const override
+    {
+        int omapSize = sizeof(bool) * _OccupancyGrid.size();
+        int sdfSize = sizeof(float) * _SDF.size();
+
+        return omapSize + sdfSize;
     }
 
     /// @brief Const view into _SignedDistFunc
