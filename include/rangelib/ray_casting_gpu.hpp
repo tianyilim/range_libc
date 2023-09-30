@@ -1,4 +1,4 @@
-#ifndef RANGELIB_RAY_MARCHING_GPU_HPP_
+#ifdef RANGELIB_RAY_MARCHING_GPU_HPP_  // disables this file for now
 #define RANGELIB_RAY_MARCHING_GPU_HPP_
 
 #include "rangelib/omap.hpp"
@@ -23,7 +23,7 @@ class RayMarchingGPU : public RangeMethod {
         distImage = new DistanceTransform(m);
 #if USE_CUDA == 1
         rmc =
-            new RayMarchingCUDA(distImage->grid(), distImage->width, distImage->height, max_range);
+            new RayMarchingCUDA(distImage->grid(), distImage->width, distImage->height, _maxRange);
 
         rmc->set_conversion_params(m._worldScale, m._worldAngle, m._worldOriginX, m._worldOriginY,
                                    m._worldSinAngle, m._worldCosAngle);
