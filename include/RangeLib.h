@@ -18,6 +18,8 @@
 #ifndef RANGE_LIB_H
 #define RANGE_LIB_H
 
+#include <iomanip>
+
 #include "rangelib/bresenhams.hpp"
 #include "rangelib/cddt.hpp"
 #include "rangelib/lookup_table.hpp"
@@ -32,7 +34,7 @@ class Benchmark {
    public:
     /// @brief benchmark constructor.
     /// @param rm: m_Range method
-    Benchmark(range_T rm) : m_Range(rm) { m_OMap = m_Range.getMap(); };
+    Benchmark(range_T rm) : m_Range(rm), m_OMap{m_Range.getMap()} {};
 
     ~Benchmark(){};
 
@@ -58,8 +60,8 @@ class Benchmark {
 
         for (int i = 0; i < num_rays; ++i) {
             float angle = i * coeff;
-            for (int x = 0; x < m_OMap->width(); x += step_size) {
-                for (int y = 0; y < m_OMap->height(); y += step_size) {
+            for (int x = 0; x < m_OMap.width(); x += step_size) {
+                for (int y = 0; y < m_OMap.height(); y += step_size) {
                     auto start_time = std::chrono::high_resolution_clock::now();
                     for (int j = 0; j < samples; ++j) {
                         volatile float r = m_Range.calc_range(x, y, angle);
@@ -100,10 +102,10 @@ class Benchmark {
         if (m_Log) (*m_Log) << std::setprecision(9);
 
         int num_samples =
-            num_grid_samples(step_size, num_rays, samples, m_OMap->width(), m_OMap->height());
+            num_grid_samples(step_size, num_rays, samples, m_OMap.width(), m_OMap.height());
         float *samps = new float[num_samples * 3];
         float *outs = new float[num_samples];
-        get_grid_samples(samps, step_size, num_rays, samples, m_OMap->width(), m_OMap->height());
+        get_grid_samples(samps, step_size, num_rays, samples, m_OMap.width(), m_OMap.height());
 
         auto start_time = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < num_samples; ++i)
@@ -160,9 +162,9 @@ class Benchmark {
         std::default_random_engine generator;
         generator.seed(clock());
         std::uniform_real_distribution<float> randx =
-            std::uniform_real_distribution<float>(1.0, m_OMap->width() - 1.0);
+            std::uniform_real_distribution<float>(1.0, m_OMap.width() - 1.0);
         std::uniform_real_distribution<float> randy =
-            std::uniform_real_distribution<float>(1.0, m_OMap->height() - 1.0);
+            std::uniform_real_distribution<float>(1.0, m_OMap.height() - 1.0);
         std::uniform_real_distribution<float> randt =
             std::uniform_real_distribution<float>(0.0, M_2PI);
 
@@ -209,11 +211,11 @@ class Benchmark {
         }
     }
 
-    ranges::OMap *getMap() const { return m_Range.getMap(); }
+    ranges::OMap &getMap() const { return m_Range.getMap(); }
 
    protected:
     range_T m_Range;                  ///< Range method
-    ranges::OMap *m_OMap;             ///< Map
+    const ranges::OMap &m_OMap;       ///< Map
     std::stringstream *m_Log = NULL;  ///< Logging output
 };
 }  // namespace benchmark

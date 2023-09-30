@@ -13,7 +13,7 @@ class BresenhamsLine : public RangeMethod {
     float calc_range(float x, float y, float heading)
     {
         // first check if the cell underneath the query point is occupied, if so return
-        if (map.isOccupied((int)x, (int)y)) {
+        if (_distTransform.isOccupied((int)x, (int)y)) {
             return 0.0;
         }
 
@@ -28,8 +28,8 @@ class BresenhamsLine : public RangeMethod {
         */
         float x0 = y;
         float y0 = x;
-        float x1 = y + max_range * sinf(heading);
-        float y1 = x + max_range * cosf(heading);
+        float x1 = y + _maxRange * sinf(heading);
+        float y1 = x + _maxRange * cosf(heading);
 
         bool steep = false;
         if (std::abs(y1 - y0) > std::abs(x1 - x0)) steep = true;
@@ -57,8 +57,8 @@ class BresenhamsLine : public RangeMethod {
         int ystep = -1;
         if (y0 < y1) ystep = 1;
 
-        unsigned width = map.width();
-        unsigned height = map.height();
+        unsigned width = _distTransform.width();
+        unsigned height = _distTransform.height();
 
         while ((int)_x != (int)(x1 + xstep)) {
             _x += xstep;
@@ -70,24 +70,26 @@ class BresenhamsLine : public RangeMethod {
             }
 
             if (!steep) {
-                if (0 <= _y && _y < width && 0 <= _x && _x < height && map.isOccupied(_y, _x)) {
+                if (0 <= _y && _y < width && 0 <= _x && _x < height &&
+                    _distTransform.isOccupied(_y, _x)) {
                     float xd = _x - x0;
                     float yd = _y - y0;
                     return sqrtf(xd * xd + yd * yd);
                 }
             }
             else {
-                if (0 <= _x && _x < width && 0 <= _y && _y < height && map.isOccupied(_x, _y)) {
+                if (0 <= _x && _x < width && 0 <= _y && _y < height &&
+                    _distTransform.isOccupied(_x, _y)) {
                     float xd = _x - x0;
                     float yd = _y - y0;
                     return sqrtf(xd * xd + yd * yd);
                 }
             }
         }
-        return max_range;
+        return _maxRange;
     }
 
-    int memory() { return map.memory(); }
+    int memory() const override { return _distTransform.memory(); }
 };
 
 }  // namespace ranges

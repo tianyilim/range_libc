@@ -6,7 +6,7 @@ PROJECT(range_lib
 	LANGUAGES CXX)
 
 # GoogleTest min C++ version is 17
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set CMake variables here

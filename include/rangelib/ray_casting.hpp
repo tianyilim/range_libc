@@ -8,9 +8,12 @@ namespace ranges {
 
 class RayMarching : public RangeMethod {
    public:
-    RayMarching(OMap m, float mr) : RangeMethod(m, mr) { _distImage = DistanceTransform(m); }
+    RayMarching(OMap m, float mr, float distThreshold = 0.0, float stepCoeff = 0.999)
+        : RangeMethod(m, mr), _distThreshold{distThreshold}, _stepCoeff{stepCoeff}
+    {
+    }
 
-    float calc_range(const float x, const float y, const float heading)
+    float calc_range(const float x, const float y, const float heading) const override
     {
         float ray_direction_x = cosf(heading);
         float ray_direction_y = sinf(heading);
@@ -18,15 +21,16 @@ class RayMarching : public RangeMethod {
         int px, py;
 
         float t = 0.0;
-        while (t < max_range) {
+        while (t < _maxRange) {
             px = x + ray_direction_x * t;
             py = y + ray_direction_y * t;
 
-            if (px >= map.width() || px < 0 || py < 0 || py >= map.height()) {
-                return max_range;
+            if (px >= (int)_distTransform.width() || px < 0 || py < 0 ||
+                py >= (int)_distTransform.height()) {
+                return _maxRange;
             }
 
-            float d = _distImage.signedDistanceValue(px, py);
+            float d = _distTransform.signedDistanceValue(px, py);
 
             if (d <= _distThreshold) {
                 float xd = px - x;
@@ -37,15 +41,14 @@ class RayMarching : public RangeMethod {
             t += std::max<float>(d * _stepCoeff, 1.0);
         }
 
-        return max_range;
+        return _maxRange;
     }
 
-    int memory() { return _distImage.memory(); }
+    int memory() const override { return _distTransform.memory(); }
 
    protected:
-    DistanceTransform _distImage;
-    float _distThreshold = 0.0;
-    float _stepCoeff = 0.999;
+    const float _distThreshold;
+    const float _stepCoeff;
 };
 
 }  // namespace ranges
