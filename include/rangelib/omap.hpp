@@ -27,7 +27,7 @@ struct WorldValues {
     }
 
     // TODO make these const. In order to do so, need to setup the move/copy assignment operator for
-    // TODO OMap
+    // OMap
 
     // Implement default values
     float worldScale = 1.0;

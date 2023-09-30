@@ -2,6 +2,8 @@
 
 > **NOTE** @maintainers (Nic/Edo): This remote points to a fork of RangeLibc on TY's personal github for now. But, creating a submodule on the git.ee servers when possible would be ideal. _(or, you can give me free GH stars)_
 
+The development log can be found [here](./changelog.md).
+
 **Repo Roadmap**
 - [ ] Add tests
   - [ ] Test individual functions within each class / rangemethod
@@ -14,66 +16,6 @@
 - [ ] Make improvements/modernization to underlying algos
 - [ ] Update code structure
 
-## Testing Instructions
-1. From directory root: `cmake -S . -B build` This configures the CMakeLists.
-2. From directory root: `cmake --build build` This builds.
-3. From `build/bin`: Run the relevant test targets.
-
-
-## Changes from original `rangelibc`:
-- Modifying GLT to use a 1D vector instead of 3D vector
-- Test method: Modify the headers in `RangeLib.h`, run the built exectuable:
-	`./range_lib -map_path ../../maps/basement_fixed.png -method glt -which_benchmark grid`
-- Original timing, using `uint16_t` LUT:
-	```
-	...Loading range method: GiantLUTCast
-	...lut size (MB): 348.129
-	...construction time: 3.88341
-	...Running grid benchmark
-	finished grid sample after: 0.106878 sec
-	-avg time per ray: 1.35079e-07 sec
-	-rays cast: 676000
-	-total time: 0.0913132 sec
-	```
-- Original timing, using `float` LUT:
-    ```
-	...Loading range method: GiantLUTCast
-	...lut size (MB): 696.259
-	...construction time: 3.84431
-	...Running grid benchmark
-	finished grid sample after: 0.114181 sec
-	-avg time per ray: 1.4495e-07 sec
-	-rays cast: 676000
-	-total time: 0.0979861 sec
-	```
-- Modified timing, using `uint16_t` LUT:
-	```
-	...Loading range method: GiantLUTCast
-	...lut size (MB): 348.129
-	...construction time: 3.36884
-	...Running grid benchmark
-	finished grid sample after: 0.092248 sec
-	-avg time per ray: 1.13772e-07 sec
-	-rays cast: 676000
-	-total time: 0.0769099 sec
-	```
-
-- Modified timing, using `float` LUT:
-	```
-	...Loading range method: GiantLUTCast
-	...lut size (MB): 696.259
-	...construction time: 3.29234
-	...Running grid benchmark
-	finished grid sample after: 0.112021 sec
-	-avg time per ray: 1.39633e-07 sec
-	-rays cast: 676000
-	-total time: 0.0943918 sec
-	```
-
-As can be seen, 1D indexing is faster! It will therefore be used moving forward.
-
-What remains to be seen is whether the `float` datatype makes a difference in actual performance.
-
 ---
 This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
@@ -82,6 +24,8 @@ This library provides for different implementations of 2D raycasting for 2D occu
 This code was built in Ubuntu 22.04 with and without GPU support.
 
 ### Requirements
+
+TODO migrate cuda setup to another page
 
 For GPU support, execute the following if using Ubuntu 22.04. Taken from [Nvidia installation instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) for CUDA. Follow the guide if you have another distribution. Running these commands may take a while!
 
@@ -134,6 +78,8 @@ make
 
 ### Python Wrappers
 
+TODO - test and run this
+
 To build the code and its associated Python wrappers for use in Python code, do the following. You may have to install Cython if you do not already have it on your system.
 
 ```bash
@@ -165,7 +111,7 @@ This repo is a modification to the original `rangelibc` [publication](http://arx
         year   = {2017}}
 
 ## Code structure
-`TODO`
+`TODO` -- add here
 
 ## RangeLibc Algorithms Overview
 
