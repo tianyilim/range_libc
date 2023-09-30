@@ -1,7 +1,10 @@
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Distutils import build_ext
-import numpy, os, platform, sys
+import numpy
+import os
+import platform
+import sys
 from os.path import join as pjoin
 
 
@@ -10,6 +13,7 @@ try:
     numpy_include = numpy.get_include()
 except AttributeError:
     numpy_include = numpy.get_numpy_include()
+
 
 def check_for_flag(flag_str, truemsg=False, falsemsg=False):
     if flag_str in os.environ:
@@ -25,12 +29,13 @@ def check_for_flag(flag_str, truemsg=False, falsemsg=False):
 
     return enabled
 
-use_cuda = check_for_flag("WITH_CUDA", \
-	"Compiling with CUDA support", \
-	"Compiling without CUDA support. To enable CUDA use:")
-trace    = check_for_flag("TRACE", \
-	"Compiling with trace enabled for Bresenham's Line", \
-	"Compiling without trace enabled for Bresenham's Line")
+
+use_cuda = check_for_flag("WITH_CUDA",
+                          "Compiling with CUDA support",
+                          "Compiling without CUDA support. To enable CUDA use:")
+trace = check_for_flag("TRACE",
+                       "Compiling with trace enabled for Bresenham's Line",
+                       "Compiling without trace enabled for Bresenham's Line")
 
 print("\n--------------\n")
 
@@ -39,9 +44,10 @@ if platform.system().lower() == "darwin":
     os.environ["MACOSX_DEPLOYMENT_TARGET"] = platform.mac_ver()[0]
     os.environ["CC"] = "c++"
 
+
 def find_in_path(name, path):
     "Find a file in a search path"
-    #adapted fom http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
+    # adapted fom http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
     for dir in path.split(os.pathsep):
         binpath = pjoin(dir, name)
         if os.path.exists(binpath):
@@ -49,6 +55,8 @@ def find_in_path(name, path):
     return None
 
 # export CUDAHOME=/usr/local/cuda
+
+
 def locate_cuda():
     """Locate the CUDA environment on the system
 
@@ -74,15 +82,16 @@ def locate_cuda():
         nvcc = find_in_path('nvcc', os.environ['PATH'])
         if nvcc is None:
             raise EnvironmentError('The nvcc binary could not be '
-                'located in your $PATH. Either add it to your path, or set $CUDAHOME')
+                                   'located in your $PATH. Either add it to your path, or set $CUDAHOME')
         home = os.path.dirname(os.path.dirname(nvcc))
 
-    cudaconfig = {'home':home, 'nvcc':nvcc,
+    cudaconfig = {'home': home, 'nvcc': nvcc,
                   'include': pjoin(home, 'include'),
                   'lib64': pjoin(home, 'lib64')}
     for k, v in cudaconfig.iteritems():
         if not os.path.exists(v):
-            raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
+            raise EnvironmentError(
+                'The CUDA %s path could not be located in %s' % (k, v))
 
     return cudaconfig
 
@@ -91,26 +100,31 @@ def locate_cuda():
 
 
 # compiler_flags = ["-w","-std=c++11", "-march=native", "-ffast-math", "-fno-math-errno"]
-compiler_flags = ["-w","-std=c++11", "-march=native", "-ffast-math", "-fno-math-errno", "-O3"]
-nvcc_flags = ['-arch=sm_20', '--ptxas-options=-v', '-c', '--compiler-options', "'-fPIC'", "-w","-std=c++11"]
+compiler_flags = ["-w", "-std=c++11", "-march=native",
+                  "-ffast-math", "-fno-math-errno", "-O3"]
+nvcc_flags = ['-arch=sm_20', '--ptxas-options=-v', '-c',
+              '--compiler-options', "'-fPIC'", "-w", "-std=c++11"]
 include_dirs = ["../", numpy_include]
 depends = ["../include/*.h"]
-sources = ["RangeLibc.pyx","../vendor/lodepng/lodepng.cpp"]
+sources = ["RangeLibc.pyx", "../vendor/lodepng/lodepng.cpp"]
 
 CHUNK_SIZE = "262144"
 NUM_THREADS = "256"
 
 if use_cuda:
-    compiler_flags.append("-DUSE_CUDA=1");        nvcc_flags.append("-DUSE_CUDA=1")
-    compiler_flags.append("-DCHUNK_SIZE="+CHUNK_SIZE); nvcc_flags.append("-DCHUNK_SIZE="+CHUNK_SIZE)
-    compiler_flags.append("-DNUM_THREADS="+NUM_THREADS);   nvcc_flags.append("-DNUM_THREADS="+NUM_THREADS)
+    compiler_flags.append("-DUSE_CUDA=1")
+    nvcc_flags.append("-DUSE_CUDA=1")
+    compiler_flags.append("-DCHUNK_SIZE="+CHUNK_SIZE)
+    nvcc_flags.append("-DCHUNK_SIZE="+CHUNK_SIZE)
+    compiler_flags.append("-DNUM_THREADS="+NUM_THREADS)
+    nvcc_flags.append("-DNUM_THREADS="+NUM_THREADS)
 
     CUDA = locate_cuda()
     include_dirs.append(CUDA['include'])
     sources.append("../include/kernels.cu")
 
 if trace:
-	compiler_flags.append("-D_MAKE_TRACE_MAP=1")
+    compiler_flags.append("-D_MAKE_TRACE_MAP=1")
 
 
 ##################################################################
@@ -154,36 +168,40 @@ def customize_compiler_for_nvcc(self):
     self._compile = _compile
 
 # run the customize_compiler
+
+
 class custom_build_ext(build_ext):
     def build_extensions(self):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
 
+
 if use_cuda:
-	ext = Extension("range_libc", sources, 
-					extra_compile_args = {'gcc': compiler_flags, 'nvcc': nvcc_flags},
-					extra_link_args = ["-std=c++11"],
-					include_dirs = include_dirs,
-					library_dirs=[CUDA['lib64']],
-					libraries=['cudart'],
-					runtime_library_dirs=[CUDA['lib64']],
-					depends=depends,
-					language="c++",)
-	setup(name='range_libc',
-		author='Corey Walsh',
-		version='0.1',
-		ext_modules = [ext],
-		# inject our custom trigger
-		cmdclass={'build_ext': custom_build_ext})
+    ext = Extension("range_libc", sources,
+                    extra_compile_args={
+                        'gcc': compiler_flags, 'nvcc': nvcc_flags},
+                    extra_link_args=["-std=c++11"],
+                    include_dirs=include_dirs,
+                    library_dirs=[CUDA['lib64']],
+                    libraries=['cudart'],
+                    runtime_library_dirs=[CUDA['lib64']],
+                    depends=depends,
+                    language="c++",)
+    setup(name='range_libc',
+          author='Corey Walsh',
+          version='0.1',
+          ext_modules=[ext],
+          # inject our custom trigger
+          cmdclass={'build_ext': custom_build_ext})
 else:
-	setup(ext_modules=[
-			Extension("range_libc", sources, 
-				extra_compile_args = compiler_flags,
-				extra_link_args = ["-std=c++11"],
-				include_dirs = include_dirs,
-				depends=["../include/*.h"],
-				language="c++",)],
-		name='range_libc',
-		author='Corey Walsh',
-		version='0.1',
-	    cmdclass = {'build_ext': build_ext})
+    setup(ext_modules=[
+        Extension("range_libc", sources,
+                  extra_compile_args=compiler_flags,
+                  extra_link_args=["-std=c++11"],
+                  include_dirs=include_dirs,
+                  depends=["../include/*.h"],
+                  language="c++",)],
+          name='range_libc',
+          author='Corey Walsh',
+          version='0.1',
+          cmdclass={'build_ext': build_ext})
