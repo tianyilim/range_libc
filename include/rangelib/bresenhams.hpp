@@ -10,7 +10,7 @@ class BresenhamsLine : public RangeMethod {
    public:
     BresenhamsLine(OMap m, float mr) : RangeMethod(m, mr){};
 
-    float calc_range(float x, float y, float heading) const override
+    float calc_range(const float x, const float y, const float heading) const override
     {
         // first check if the cell underneath the query point is occupied, if so return
         if (_distTransform.isOccupied((int)x, (int)y)) {
