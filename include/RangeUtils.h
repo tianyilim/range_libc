@@ -40,6 +40,12 @@ float rgb2gray(float r, float g, float b) { return 0.229 * r + 0.587 * g + 0.114
 /// @brief Random value within range
 int randrange(int min, int max) { return min + (rand() % (int)(max - min + 1)); }
 
+/// @brief Returns the 4 (or 8, if use_corners) grid cells that are neighbors of the input grid
+/// coordinate (x, y).
+/// @param[in] x x coordinate of grid cell
+/// @param[in] y y coordinate of grid cell
+/// @param[in] use_corners whether to include the diagonal neighbors
+/// @return vector of neighbors
 std::vector<std::pair<int, int>> outline(int x, int y, bool use_corners)
 {
     std::vector<std::pair<int, int>> corners;
