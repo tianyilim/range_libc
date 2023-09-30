@@ -13,7 +13,9 @@
 // TODO add documentation
 
 namespace utils {
-static unsigned long x = 123456789, y = 362436069, z = 521288629;
+
+// For below function
+[[maybe_unused]] static unsigned long x = 123456789, y = 362436069, z = 521288629;
 
 /// @brief  Pseudo Random number generator
 unsigned long xorshf96(void);
