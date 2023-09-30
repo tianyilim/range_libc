@@ -51,6 +51,10 @@ add_library(lodepng_lib
 	vendor/lodepng/lodepng.cpp
 )
 
+add_library(rangeUtils
+	src/RangeUtils.cpp
+)
+
 # if(WITH_CUDA)
 # add_definitions(-DUSE_CUDA=1)
 # add_definitions(-DCHUNK_SIZE=${CHUNK_SIZE})
@@ -73,6 +77,10 @@ add_library(lodepng_lib
 # endif()
 
 # target_link_libraries(range_lib gflags pthread lodepng_lib)
+add_executable(rg_test
+	src/testDriver.cpp
+)
+target_link_libraries(rg_test lodepng_lib rangeUtils)
 
 # Testing only
 enable_testing()
@@ -80,10 +88,12 @@ enable_testing()
 add_executable(
 	test_rangelib
 	test/test_omap.cpp
+	test/test_bl.cpp
 )
 target_link_libraries(
 	test_rangelib
 	lodepng_lib
+	rangeUtils
 	GTest::gtest_main
 )
 include(GoogleTest)

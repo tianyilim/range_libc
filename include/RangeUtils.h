@@ -10,35 +10,23 @@
 #include <tuple>
 #include <vector>
 
+// TODO add documentation
+
 namespace utils {
 static unsigned long x = 123456789, y = 362436069, z = 521288629;
 
 /// @brief  Pseudo Random number generator
-unsigned long xorshf96(void)
-{  // period 2^96-1
-    // return std::rand() / RAND_MAX;
-    unsigned long t;
-    x ^= x << 16;
-    x ^= x >> 5;
-    x ^= x << 1;
-
-    t = x;
-    x = y;
-    y = z;
-    z = t ^ x ^ y;
-
-    return z;
-}
+unsigned long xorshf96(void);
 
 /// @brief Returns a grayscale value by mixing 3 rgb values
 /// @param[in] r color intensity value
 /// @param[in] g color intensity value
 /// @param[in] b color intensity value
 /// @return mixed pixel value
-float rgb2gray(float r, float g, float b) { return 0.229 * r + 0.587 * g + 0.114 * b; }
+float rgb2gray(float r, float g, float b);
 
 /// @brief Random value within range
-int randrange(int min, int max) { return min + (rand() % (int)(max - min + 1)); }
+int randrange(int min, int max);
 
 /// @brief Returns the 4 (or 8, if use_corners) grid cells that are neighbors of the input grid
 /// coordinate (x, y).
@@ -46,24 +34,7 @@ int randrange(int min, int max) { return min + (rand() % (int)(max - min + 1)); 
 /// @param[in] y y coordinate of grid cell
 /// @param[in] use_corners whether to include the diagonal neighbors
 /// @return vector of neighbors
-std::vector<std::pair<int, int>> outline(int x, int y, bool use_corners)
-{
-    std::vector<std::pair<int, int>> corners;
-
-    corners.push_back(std::make_pair(x + 1, y));
-    corners.push_back(std::make_pair(x - 1, y));
-    corners.push_back(std::make_pair(x, y + 1));
-    corners.push_back(std::make_pair(x, y - 1));
-
-    if (use_corners) {
-        corners.push_back(std::make_pair(x + 1, y + 1));
-        corners.push_back(std::make_pair(x - 1, y + 1));
-        corners.push_back(std::make_pair(x + 1, y - 1));
-        corners.push_back(std::make_pair(x - 1, y - 1));
-    }
-
-    return corners;
-}
+std::vector<std::pair<int, int>> outline(int x, int y, bool use_corners);
 
 template <class key_T>
 class KeyMaker {
@@ -105,52 +76,13 @@ class KeyMaker {
     key_T t_mask;
 };
 
-bool has(std::string substring, std::string str)
-{
-    return str.find(substring) != std::string::npos;
-}
+bool has(std::string substring, std::string str);
 
-bool has(std::string val, std::vector<std::string> vstr)
-{
-    return std::find(vstr.begin(), vstr.end(), val) != vstr.end();
-}
+bool has(std::string val, std::vector<std::string> vstr);
 
-std::vector<std::string> split(std::string in, char delim)
-{
-    std::vector<std::string> result;
-    std::stringstream ss(in);
-    while (ss.good()) {
-        std::string substr;
-        std::getline(ss, substr, delim);
-        result.push_back(substr);
-    }
-    return result;
-}
+std::vector<std::string> split(std::string in, char delim);
 
-double norminv(double q)
-{
-    if (q == .5) return 0;
-
-    q = 1.0 - q;
-
-    double p = (q > 0.0 && q < 0.5) ? q : (1.0 - q);
-    double t = sqrt(log(1.0 / pow(p, 2.0)));
-
-    double c0 = 2.515517;
-    double c1 = 0.802853;
-    double c2 = 0.010328;
-
-    double d1 = 1.432788;
-    double d2 = 0.189269;
-    double d3 = 0.001308;
-
-    double x =
-        t - (c0 + c1 * t + c2 * pow(t, 2.0)) / (1.0 + d1 * t + d2 * pow(t, 2.0) + d3 * pow(t, 3.0));
-
-    if (q > .5) x *= -1.0;
-
-    return x;
-}
+double norminv(double q);
 
 template <typename T, typename U>
 struct is_same {
@@ -173,32 +105,10 @@ bool eqTypes()
 // of Knuth's book Seminumeric Algorithms.
 class NonReplacementSampler {
    public:
-    NonReplacementSampler()
-    {
-        rand = std::uniform_real_distribution<double>(0.0, 1.0);
-        generator.seed(clock());
-    }
+    NonReplacementSampler();
     ~NonReplacementSampler() {}
 
-    void sample(int populationSize, int sampleSize, std::vector<int> &samples)
-    {
-        int t = 0;  // total input records dealt with
-        int m = 0;  // number of items selected so far
-        double u;
-
-        while (m < sampleSize) {
-            // u = rand(generator);
-            u = std::rand() / (float)RAND_MAX;
-            if ((populationSize - t) * u >= sampleSize - m)
-                t++;
-            else {
-                samples.push_back(t);
-                t++;
-                m++;
-            }
-        }
-        // samples.push_back(1);
-    }
+    void sample(int populationSize, int sampleSize, std::vector<int> &samples);
 
     std::uniform_real_distribution<double> rand;
     std::default_random_engine generator;
@@ -206,30 +116,13 @@ class NonReplacementSampler {
 
 class FastRand {
    public:
-    FastRand() : FastRand(10000){};
-    FastRand(int n) : cache_size(n)
-    {
-        populate();
-        repopulate_threshold = 1.0 / cache_size;
-    }
-    ~FastRand(){};
+    FastRand();
+    FastRand(int n);
 
-    float rand()
-    {
-        // return std::rand() / (float)RAND_MAX;
-        // float v = cache[i];
-        if (i++ > cache_size - 1) i = 0;
-        // if (v < repopulate_threshold) populate();
-        return cache[i];
-    }
+    float rand();
 
-    void populate()
-    {
-        // cache.empty();
-        // for (int i = 0; i < cache_size; ++i) cache.push_back(std::rand() /
-        // (float)RAND_MAX);
-        for (int i = 0; i < cache_size; ++i) cache[i] = std::rand() / (float)RAND_MAX;
-    }
+    void populate();
+
     int i = 0;
     int cache_size;
     float repopulate_threshold;
@@ -237,39 +130,11 @@ class FastRand {
     float cache[10000];
 };
 
-void serialize(std::vector<bool> &vals, std::stringstream *ss)
-{
-    if (vals.size() == 0) {
-        (*ss) << "[]";
-        return;
-    }
-    (*ss) << "[" << vals[0];
-    for (size_t i = 1; i < vals.size(); ++i) {
-        (*ss) << "," << vals[i];
-    }
-    (*ss) << "]";
-}
+void serialize(std::vector<bool> &vals, std::stringstream *ss);
 
-void serialize(std::vector<float> &vals, std::stringstream *ss)
-{
-    if (vals.size() == 0) {
-        (*ss) << "[]";
-        return;
-    }
-    (*ss) << "[" << vals[0];
-    for (size_t i = 1; i < vals.size(); ++i) {
-        (*ss) << "," << vals[i];
-    }
-    (*ss) << "]";
-}
+void serialize(std::vector<float> &vals, std::stringstream *ss);
 
-std::string serialize(std::vector<float> &vals)
-{
-    std::stringstream ss;
-    serialize(vals, &ss);
-    return ss.str();
-}
-
+std::string serialize(std::vector<float> &vals);
 }  // namespace utils
 
 #endif /* _RANGE_UTILS_H_INCLUDED_ */
