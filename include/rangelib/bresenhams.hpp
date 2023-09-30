@@ -32,8 +32,7 @@ class BresenhamsLine : public RangeMethod {
         float y1 = x + max_range * cosf(heading);
 
         bool steep = false;
-        if (std::abs(y1 - y0) > std::abs(x1 - x0))
-            steep = true;
+        if (std::abs(y1 - y0) > std::abs(x1 - x0)) steep = true;
 
         if (steep) {
             float tmp = x0;
@@ -53,12 +52,10 @@ class BresenhamsLine : public RangeMethod {
         float _y = y0;
 
         int xstep = -1;
-        if (x0 < x1)
-            xstep = 1;
+        if (x0 < x1) xstep = 1;
 
         int ystep = -1;
-        if (y0 < y1)
-            ystep = 1;
+        if (y0 < y1) ystep = 1;
 
         unsigned width = map.width();
         unsigned height = map.height();

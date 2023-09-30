@@ -22,7 +22,8 @@ class RayMarchingGPU : public RangeMethod {
     {
         distImage = new DistanceTransform(m);
 #if USE_CUDA == 1
-        rmc = new RayMarchingCUDA(distImage->grid(), distImage->width, distImage->height, max_range);
+        rmc =
+            new RayMarchingCUDA(distImage->grid(), distImage->width, distImage->height, max_range);
 
         rmc->set_conversion_params(m._worldScale, m._worldAngle, m._worldOriginX, m._worldOriginY,
                                    m._worldSinAngle, m._worldCosAngle);
@@ -44,7 +45,8 @@ class RayMarchingGPU : public RangeMethod {
     float calc_range(float x, float y, float heading)
     {
 #if USE_CUDA == 1
-        std::cout << "Do not call calc_range on RayMarchingGPU, requires batched queries" << std::endl;
+        std::cout << "Do not call calc_range on RayMarchingGPU, requires batched queries"
+                  << std::endl;
         return -1.0;
 #else
         throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");
@@ -55,7 +57,8 @@ class RayMarchingGPU : public RangeMethod {
     {
 #if USE_CUDA == 1
         if (!(num_casts % CHUNK_SIZE == 0) && !already_warned) {
-            std::cout << "\nFor better performance, call calc_range_many with some multiple of " << CHUNK_SIZE << " queries. ";
+            std::cout << "\nFor better performance, call calc_range_many with some multiple of "
+                      << CHUNK_SIZE << " queries. ";
             std::cout << "You can change the chunk size with -DCHUNK_SIZE=[integer].\n"
                       << std::endl;
             already_warned = true;
@@ -70,8 +73,7 @@ class RayMarchingGPU : public RangeMethod {
         int iters = std::ceil((float)num_casts / (float)CHUNK_SIZE);
         for (int i = 0; i < iters; ++i) {
             int num_in_chunk = CHUNK_SIZE;
-            if (i == iters - 1)
-                num_in_chunk = num_casts - i * CHUNK_SIZE;
+            if (i == iters - 1) num_in_chunk = num_casts - i * CHUNK_SIZE;
             rmc->calc_range_many(&ins[i * CHUNK_SIZE * 3], &outs[i * CHUNK_SIZE], num_in_chunk);
         }
 #else
@@ -90,8 +92,7 @@ class RayMarchingGPU : public RangeMethod {
         int iters = std::ceil((float)num_casts / (float)CHUNK_SIZE);
         for (int i = 0; i < iters; ++i) {
             int num_in_chunk = CHUNK_SIZE;
-            if (i == iters - 1)
-                num_in_chunk = num_casts - i * CHUNK_SIZE;
+            if (i == iters - 1) num_in_chunk = num_casts - i * CHUNK_SIZE;
             rmc->numpy_calc_range(&ins[i * CHUNK_SIZE * 3], &outs[i * CHUNK_SIZE], num_in_chunk);
         }
 #else
@@ -99,7 +100,8 @@ class RayMarchingGPU : public RangeMethod {
 #endif
     }
 
-    void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles, int num_angles)
+    void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles,
+                                 int num_angles)
     {
 #if USE_CUDA == 1
 
@@ -108,10 +110,10 @@ class RayMarchingGPU : public RangeMethod {
         // must allways do the correct number of angles, can only split on the particles
         for (int i = 0; i < iters; ++i) {
             int num_in_chunk = particles_per_iter;
-            if (i == iters - 1)
-                num_in_chunk = num_particles - i * particles_per_iter;
-            rmc->numpy_calc_range_angles(&ins[i * num_in_chunk * 3], angles, &outs[i * num_in_chunk * num_angles],
-                                         num_in_chunk, num_angles);
+            if (i == iters - 1) num_in_chunk = num_particles - i * particles_per_iter;
+            rmc->numpy_calc_range_angles(&ins[i * num_in_chunk * 3], angles,
+                                         &outs[i * num_in_chunk * num_angles], num_in_chunk,
+                                         num_angles);
         }
 #else
         throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");
@@ -124,8 +126,7 @@ class RayMarchingGPU : public RangeMethod {
         // convert the sensor model from a numpy array to a vector array
         for (int i = 0; i < table_width; ++i) {
             std::vector<double> table_row;
-            for (int j = 0; j < table_width; ++j)
-                table_row.push_back(table[table_width * i + j]);
+            for (int j = 0; j < table_width; ++j) table_row.push_back(table[table_width * i + j]);
             sensor_model.push_back(table_row);
         }
         rmc->set_sensor_table(table, table_width);
@@ -133,7 +134,9 @@ class RayMarchingGPU : public RangeMethod {
 #endif
 
     // calc range for each pose, adding every angle, evaluating the sensor model
-    void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs, double *weights, int num_particles, int num_angles)
+    void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs,
+                                                    double *weights, int num_particles,
+                                                    int num_angles)
     {
 #if USE_CUDA == 1
 
@@ -142,9 +145,10 @@ class RayMarchingGPU : public RangeMethod {
         // must allways do the correct number of angles, can only split on the particles
         for (int i = 0; i < iters; ++i) {
             int num_in_chunk = particles_per_iter;
-            if (i == iters - 1)
-                num_in_chunk = num_particles - i * particles_per_iter;
-            rmc->calc_range_repeat_angles_eval_sensor_model(&ins[i * num_in_chunk * 3], angles, obs, &weights[i * num_in_chunk], num_in_chunk, num_angles);
+            if (i == iters - 1) num_in_chunk = num_particles - i * particles_per_iter;
+            rmc->calc_range_repeat_angles_eval_sensor_model(&ins[i * num_in_chunk * 3], angles, obs,
+                                                            &weights[i * num_in_chunk],
+                                                            num_in_chunk, num_angles);
         }
 #else
         throw std::string("Must compile with -DWITH_CUDA=ON to use this class.");

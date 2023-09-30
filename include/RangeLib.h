@@ -32,10 +32,7 @@ class Benchmark {
    public:
     /// @brief benchmark constructor.
     /// @param rm: m_Range method
-    Benchmark(range_T rm) : m_Range(rm)
-    {
-        m_OMap = m_Range.getMap();
-    };
+    Benchmark(range_T rm) : m_Range(rm) { m_OMap = m_Range.getMap(); };
 
     ~Benchmark(){};
 
@@ -55,12 +52,9 @@ class Benchmark {
         volatile clock_t t;
         t = clock();
 
-        if (m_Log)
-            (*m_Log) << "x,y,theta,time" << std::endl;
-        if (m_Log)
-            (*m_Log) << std::fixed;
-        if (m_Log)
-            (*m_Log) << std::setprecision(9);
+        if (m_Log) (*m_Log) << "x,y,theta,time" << std::endl;
+        if (m_Log) (*m_Log) << std::fixed;
+        if (m_Log) (*m_Log) << std::setprecision(9);
 
         for (int i = 0; i < num_rays; ++i) {
             float angle = i * coeff;
@@ -76,17 +70,21 @@ class Benchmark {
                     num_cast += samples;
                     // std::cout << (end_time - start_time).count() << std::endl;
 
-                    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
+                    std::chrono::duration<double> time_span =
+                        std::chrono::duration_cast<std::chrono::duration<double>>(end_time -
+                                                                                  start_time);
 
                     t_accum += time_span.count();
 
                     if (m_Log)
-                        (*m_Log) << x << "," << y << "," << angle << "," << time_span.count() << std::endl;
+                        (*m_Log) << x << "," << y << "," << angle << "," << time_span.count()
+                                 << std::endl;
                 }
             }
         }
 
-        std::cout << "finished grid sample after: " << (((float)(clock() - t)) / CLOCKS_PER_SEC) << " sec" << std::endl;
+        std::cout << "finished grid sample after: " << (((float)(clock() - t)) / CLOCKS_PER_SEC)
+                  << " sec" << std::endl;
         std::cout << " -avg time per ray: " << (t_accum / (float)num_cast) << " sec" << std::endl;
         std::cout << " -rays cast: " << num_cast << std::endl;
         std::cout << " -total time: " << t_accum << " sec" << std::endl;
@@ -97,14 +95,12 @@ class Benchmark {
         float coeff = (2.0 * M_PI) / num_rays;
         double t_accum = 0;
 
-        if (m_Log)
-            (*m_Log) << "x,y,theta,time" << std::endl;
-        if (m_Log)
-            (*m_Log) << std::fixed;
-        if (m_Log)
-            (*m_Log) << std::setprecision(9);
+        if (m_Log) (*m_Log) << "x,y,theta,time" << std::endl;
+        if (m_Log) (*m_Log) << std::fixed;
+        if (m_Log) (*m_Log) << std::setprecision(9);
 
-        int num_samples = num_grid_samples(step_size, num_rays, samples, m_OMap->width(), m_OMap->height());
+        int num_samples =
+            num_grid_samples(step_size, num_rays, samples, m_OMap->width(), m_OMap->height());
         float *samps = new float[num_samples * 3];
         float *outs = new float[num_samples];
         get_grid_samples(samps, step_size, num_rays, samples, m_OMap->width(), m_OMap->height());
@@ -113,31 +109,33 @@ class Benchmark {
         for (int i = 0; i < num_samples; ++i)
             outs[i] = m_Range.calc_range(samps[i * 3], samps[i * 3 + 1], samps[i * 3 + 2]);
         auto end_time = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
+        std::chrono::duration<double> time_span =
+            std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
         t_accum += time_span.count();
 
         // print first few outputs for sanity checking
-        for (int i = 0; i < 10; ++i)
-            std::cout << outs[i] << std::endl;
+        for (int i = 0; i < 10; ++i) std::cout << outs[i] << std::endl;
 
         std::cout << "finished grid sample after: " << (float)t_accum << " sec" << std::endl;
-        std::cout << " -avg time per ray: " << (t_accum / (float)num_samples) << " sec" << std::endl;
+        std::cout << " -avg time per ray: " << (t_accum / (float)num_samples) << " sec"
+                  << std::endl;
         std::cout << " -rays cast: " << num_samples << std::endl;
         std::cout << " -total time: " << t_accum << " sec" << std::endl;
     }
 
-    static int num_grid_samples(int step_size, int num_rays, int samples, int map_width, int map_height)
+    static int num_grid_samples(int step_size, int num_rays, int samples, int map_width,
+                                int map_height)
     {
         int num_samples = 0;
         for (int i = 0; i < num_rays; ++i)
             for (int x = 0; x < map_width; x += step_size)
                 for (int y = 0; y < map_height; y += step_size)
-                    for (int j = 0; j < samples; ++j)
-                        num_samples++;
+                    for (int j = 0; j < samples; ++j) num_samples++;
         return num_samples;
     }
 
-    static void get_grid_samples(float *queries, int step_size, int num_rays, int samples, int map_width, int map_height)
+    static void get_grid_samples(float *queries, int step_size, int num_rays, int samples,
+                                 int map_width, int map_height)
     {
         float coeff = (2.0 * M_PI) / num_rays;
         double t_accum = 0;
@@ -161,9 +159,12 @@ class Benchmark {
     {
         std::default_random_engine generator;
         generator.seed(clock());
-        std::uniform_real_distribution<float> randx = std::uniform_real_distribution<float>(1.0, m_OMap->width() - 1.0);
-        std::uniform_real_distribution<float> randy = std::uniform_real_distribution<float>(1.0, m_OMap->height() - 1.0);
-        std::uniform_real_distribution<float> randt = std::uniform_real_distribution<float>(0.0, M_2PI);
+        std::uniform_real_distribution<float> randx =
+            std::uniform_real_distribution<float>(1.0, m_OMap->width() - 1.0);
+        std::uniform_real_distribution<float> randy =
+            std::uniform_real_distribution<float>(1.0, m_OMap->height() - 1.0);
+        std::uniform_real_distribution<float> randt =
+            std::uniform_real_distribution<float>(0.0, M_2PI);
 
         double t_accum = 0;
         for (int i = 0; i < num_samples; ++i) {
@@ -174,7 +175,8 @@ class Benchmark {
             auto start_time = std::chrono::high_resolution_clock::now();
             volatile float r = m_Range.calc_range(x, y, angle);
             auto end_time = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
+            std::chrono::duration<double> time_span =
+                std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
 
             t_accum += time_span.count();
             if (m_Log)
@@ -182,7 +184,8 @@ class Benchmark {
         }
 
         std::cout << "finished random sample after: " << t_accum << " sec" << std::endl;
-        std::cout << " -avg time per ray: " << (t_accum / (float)num_samples) << " sec" << std::endl;
+        std::cout << " -avg time per ray: " << (t_accum / (float)num_samples) << " sec"
+                  << std::endl;
         std::cout << " -rays cast: " << num_samples << std::endl;
     }
 
@@ -192,9 +195,12 @@ class Benchmark {
         generator.seed(std::chrono::duration_cast<std::chrono::nanoseconds>(
                            std::chrono::system_clock::now().time_since_epoch())
                            .count());
-        std::uniform_real_distribution<float> randx = std::uniform_real_distribution<float>(1.0, map_width - 1.0);
-        std::uniform_real_distribution<float> randy = std::uniform_real_distribution<float>(1.0, map_height - 1.0);
-        std::uniform_real_distribution<float> randt = std::uniform_real_distribution<float>(0.0, M_2PI);
+        std::uniform_real_distribution<float> randx =
+            std::uniform_real_distribution<float>(1.0, map_width - 1.0);
+        std::uniform_real_distribution<float> randy =
+            std::uniform_real_distribution<float>(1.0, map_height - 1.0);
+        std::uniform_real_distribution<float> randt =
+            std::uniform_real_distribution<float>(0.0, M_2PI);
 
         for (int i = 0; i < num_samples; ++i) {
             queries[3 * i] = randx(generator);

@@ -11,7 +11,8 @@
 #define _TRACK_LUT_SIZE 0
 #define _TRACK_COLLISION_INDEXES 0
 
-#define _BINARY_SEARCH_THRESHOLD 64  // if there are more than this number of elements in the lut bin, use binary search
+#define _BINARY_SEARCH_THRESHOLD \
+    64  // if there are more than this number of elements in the lut bin, use binary search
 
 // fast optimized version
 #define _USE_CACHED_TRIG 0
@@ -74,9 +75,11 @@ class CDDTCast : public RangeMethod {
 // compute the height of the axis aligned bounding box, which will determine
 // the necessary width of the lookup table for this angle
 #if _USE_CACHED_TRIG == 1
-            float rotated_height = std::abs(map.width() * sinfangle) + std::abs(map.height() * cosfangle);
+            float rotated_height =
+                std::abs(map.width() * sinfangle) + std::abs(map.height() * cosfangle);
 #else
-            float rotated_height = std::abs(map.width() * sinf(angle)) + std::abs(map.height() * cosf(angle));
+            float rotated_height =
+                std::abs(map.width() * sinf(angle)) + std::abs(map.height() * cosf(angle));
 #endif
             unsigned int lut_width = ceil(rotated_height - _EPSILON);
             lut_widths.push_back(lut_width);
@@ -120,8 +123,10 @@ class CDDTCast : public RangeMethod {
             float right_bottom_corner_y = map.width() * sinf(angle);
 #endif
 
-            // find the lowest corner, and determine the translation necessary to make them all positive
-            float min_corner_y = std::min(left_top_corner_y, std::min(right_top_corner_y, right_bottom_corner_y));
+            // find the lowest corner, and determine the translation necessary to make them all
+            // positive
+            float min_corner_y =
+                std::min(left_top_corner_y, std::min(right_top_corner_y, right_bottom_corner_y));
             float lut_translation = std::max(0.0, -1.0 * min_corner_y - _EPSILON);
 
             lut_translations.push_back(lut_translation);
@@ -162,19 +167,21 @@ class CDDTCast : public RangeMethod {
                         float sinangle = sinf(angle);
 #endif
 
-                        float half_lut_space_width = (std::abs(sinangle) + std::abs(cosangle)) / 2.0;
+                        float half_lut_space_width =
+                            (std::abs(sinangle) + std::abs(cosangle)) / 2.0;
 
-                        float lut_space_center_x = pixel_center.first * cosangle - pixel_center.second * sinangle;
-                        float lut_space_center_y = (pixel_center.first * sinangle + pixel_center.second * cosangle) + lut_translations[a];
+                        float lut_space_center_x =
+                            pixel_center.first * cosangle - pixel_center.second * sinangle;
+                        float lut_space_center_y =
+                            (pixel_center.first * sinangle + pixel_center.second * cosangle) +
+                            lut_translations[a];
 
                         int upper_bin = lut_space_center_y + half_lut_space_width - _EPSILON;
                         int lower_bin = lut_space_center_y - half_lut_space_width + _EPSILON;
 
-                        // the following is a quick hack to prevent problems in the cardinal directions
-                        // where it has been known to see through walls
-                        // if (std::fmod(angle, M_PI/2.0) < _EPSILON) {
-                        // 	upper_bin++;
-                        // 	lower_bin--;
+                        // the following is a quick hack to prevent problems in the cardinal
+                        // directions where it has been known to see through walls if
+                        // (std::fmod(angle, M_PI/2.0) < _EPSILON) { 	upper_bin++; 	lower_bin--;
                         // }
 
                         for (int i = lower_bin; i <= upper_bin; ++i)
@@ -182,13 +189,15 @@ class CDDTCast : public RangeMethod {
 
                         // std::cout << std::endl;
                         // std::cout << "angle: " << angle << std::endl;
-                        // std::cout << "center: (" << pixel_center.first << ", " << pixel_center.second << ")" << std::endl;
-                        // std::cout << "new center: (" << lut_space_center_x << ", " << lut_space_center_y << ")" << std::endl;
-                        // std::cout << "bins:" << upper_bin << "    " << (int) lut_space_center_y << "   " << lower_bin << std::endl;
-                        // std::cout << "width:" << half_lut_space_width << std::endl;
-                        // std::cout << "trans" << lut_translations[a] << std::endl;
-                        // std::cout << upper_bin << "   " << lower_bin << "   " << lut_translations[a] << std::endl;
-                        // std::cout << lut_space_center_x << "  " << lut_space_center_y << std::endl;
+                        // std::cout << "center: (" << pixel_center.first << ", " <<
+                        // pixel_center.second << ")" << std::endl; std::cout << "new center: (" <<
+                        // lut_space_center_x << ", " << lut_space_center_y << ")" << std::endl;
+                        // std::cout << "bins:" << upper_bin << "    " << (int) lut_space_center_y
+                        // << "   " << lower_bin << std::endl; std::cout << "width:" <<
+                        // half_lut_space_width << std::endl; std::cout << "trans" <<
+                        // lut_translations[a] << std::endl; std::cout << upper_bin << "   " <<
+                        // lower_bin << "   " << lut_translations[a] << std::endl; std::cout <<
+                        // lut_space_center_x << "  " << lut_space_center_y << std::endl;
                     }
                 }
             }
@@ -201,7 +210,9 @@ class CDDTCast : public RangeMethod {
                 std::sort(compressed_lut[a][i].begin(), compressed_lut[a][i].end());
 
                 // remove all duplicate entries, they will not change the answer
-                compressed_lut[a][i].erase(unique(compressed_lut[a][i].begin(), compressed_lut[a][i].end()), compressed_lut[a][i].end());
+                compressed_lut[a][i].erase(
+                    unique(compressed_lut[a][i].begin(), compressed_lut[a][i].end()),
+                    compressed_lut[a][i].end());
             }
         }
 
@@ -288,14 +299,14 @@ class CDDTCast : public RangeMethod {
                     int high = lut_bin->size() - 1;
 
                     // there are no entries in this lut bin
-                    if (high == -1)
-                        continue;
-                    if (map.isOccupied(x, y))
-                        continue;
+                    if (high == -1) continue;
+                    if (map.isOccupied(x, y)) continue;
 
                     // the furthest entry is behind the query point
-                    // if ((*lut_bin)[high] + max_range < lut_space_x) return std::make_pair(max_range, max_range);
-                    if ((*lut_bin)[high] < lut_space_x && lut_space_x - (*lut_bin)[high] < max_range) {
+                    // if ((*lut_bin)[high] + max_range < lut_space_x) return
+                    // std::make_pair(max_range, max_range);
+                    if ((*lut_bin)[high] < lut_space_x &&
+                        lut_space_x - (*lut_bin)[high] < max_range) {
                         local_collision_table[angle_index][lut_index].insert(high);
                         // accum += 1;
                         continue;
@@ -303,8 +314,10 @@ class CDDTCast : public RangeMethod {
 
                     int index;
                     if (high > _BINARY_SEARCH_THRESHOLD) {
-                        // once the binary search terminates, the next greatest element is indicated by 'val'
-                        index = std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin();
+                        // once the binary search terminates, the next greatest element is indicated
+                        // by 'val'
+                        index = std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) -
+                                lut_bin->begin();
                     }
                     else {  // do linear search if array is very small
                         for (int i = 0; i < lut_bin->size(); ++i) {
@@ -338,9 +351,9 @@ class CDDTCast : public RangeMethod {
                 std::vector<float> pruned_bin;
 
                 for (int i = 0; i < compressed_lut[a][lut_index].size(); ++i) {
-                    bool is_used = local_collision_table[a][lut_index].find(i) != local_collision_table[a][lut_index].end();
-                    if (is_used)
-                        pruned_bin.push_back(compressed_lut[a][lut_index][i]);
+                    bool is_used = local_collision_table[a][lut_index].find(i) !=
+                                   local_collision_table[a][lut_index].end();
+                    if (is_used) pruned_bin.push_back(compressed_lut[a][lut_index][i]);
                 }
                 compressed_lut[a][lut_index] = pruned_bin;
             }
@@ -357,8 +370,7 @@ class CDDTCast : public RangeMethod {
     {
         theta = fmod(theta, M_2PI);
         // fmod does not wrap the angle into the positive range, so this will fix that if necessary
-        if (theta < 0.0)
-            theta += M_2PI;
+        if (theta < 0.0) theta += M_2PI;
 
         // exploit rotational symmetry by wrapping the theta range around to the range 0:pi
         bool is_flipped = false;
@@ -434,8 +446,7 @@ class CDDTCast : public RangeMethod {
 
         unsigned int lut_index = (int)lut_space_y;
         // this is to prevent segfaults
-        if (lut_index < 0 || lut_index >= compressed_lut[angle_index].size())
-            return max_range;
+        if (lut_index < 0 || lut_index >= compressed_lut[angle_index].size()) return max_range;
         std::vector<float> *lut_bin = &compressed_lut[angle_index][lut_index];
 
         // the angle is in range pi:2pi, so we must search in the opposite direction
@@ -468,15 +479,17 @@ class CDDTCast : public RangeMethod {
             }
 
             // the query point is on top of a occupied pixel
-            // this call is here rather than at the beginning, because it is apparently more efficient.
-            // I presume that this has to do with the previous two return statements
+            // this call is here rather than at the beginning, because it is apparently more
+            // efficient. I presume that this has to do with the previous two return statements
             if (map.isOccupied(x, y)) {
                 return 0.0;
             }
 
             if (high > _BINARY_SEARCH_THRESHOLD) {
-                int index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin();
-                assert(index > 0);  // if index is 0, this will segfault. that should never happen, though.
+                int index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) -
+                            lut_bin->begin();
+                assert(index >
+                       0);  // if index is 0, this will segfault. that should never happen, though.
                 float val = lut_space_x - (*lut_bin)[index - 1];
 
 #if _TRACK_COLLISION_INDEXES == 1
@@ -533,16 +546,18 @@ class CDDTCast : public RangeMethod {
                 return val;
             }
             // the query point is on top of a occupied pixel
-            // this call is here rather than at the beginning, because it is apparently more efficient.
-            // I presume that this has to do with the previous two return statements
+            // this call is here rather than at the beginning, because it is apparently more
+            // efficient. I presume that this has to do with the previous two return statements
             if (map.isOccupied(x, y)) {
                 return 0.0;
             }
 
             if (high > _BINARY_SEARCH_THRESHOLD) {
-                // once the binary search terminates, the next greatest element is indicated by 'val'
-                // float val = *std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x);
-                int index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin();
+                // once the binary search terminates, the next greatest element is indicated by
+                // 'val' float val = *std::lower_bound(lut_bin->begin(), lut_bin->end(),
+                // lut_space_x);
+                int index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) -
+                            lut_bin->begin();
                 float val = (*lut_bin)[index] - lut_space_x;
 
 #if _TRACK_COLLISION_INDEXES == 1
@@ -612,17 +627,18 @@ class CDDTCast : public RangeMethod {
             int high = lut_bin->size() - 1;
 
             // there are no entries in this lut bin
-            if (high == -1)
-                return std::make_pair(max_range, max_range);
-            // the furthest entry is behind the query point and out of max range of the inverse query
-            // if ((*lut_bin)[low] - max_range > lut_space_x) return std::make_pair(max_range, max_range);
+            if (high == -1) return std::make_pair(max_range, max_range);
+            // the furthest entry is behind the query point and out of max range of the inverse
+            // query if ((*lut_bin)[low] - max_range > lut_space_x) return std::make_pair(max_range,
+            // max_range);
             if ((*lut_bin)[low] > lut_space_x)
-                return std::make_pair(max_range, std::min(max_range, (*lut_bin)[low] - lut_space_x));
+                return std::make_pair(max_range,
+                                      std::min(max_range, (*lut_bin)[low] - lut_space_x));
             if ((*lut_bin)[high] < lut_space_x)
                 return std::make_pair(lut_space_x - (*lut_bin)[high], max_range);
             // the query point is on top of a occupied pixel
-            // this call is here rather than at the beginning, because it is apparently more efficient.
-            // I presume that this has to do with the previous two return statements
+            // this call is here rather than at the beginning, because it is apparently more
+            // efficient. I presume that this has to do with the previous two return statements
             if (map.isOccupied(x, y)) {
                 return std::make_pair(0.0, 0.0);
             }
@@ -632,7 +648,8 @@ class CDDTCast : public RangeMethod {
             if (high > _BINARY_SEARCH_THRESHOLD) {
                 // once the binary search terminates, the next least element is indicated by 'val'
                 // float val = *std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x);
-                index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin() - 1;
+                index = std::upper_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) -
+                        lut_bin->begin() - 1;
                 val = (*lut_bin)[index];
             }
             else {  // do linear search if array is very small
@@ -670,17 +687,18 @@ class CDDTCast : public RangeMethod {
             int high = lut_bin->size() - 1;
 
             // there are no entries in this lut bin
-            if (high == -1)
-                return std::make_pair(max_range, max_range);
+            if (high == -1) return std::make_pair(max_range, max_range);
             // the furthest entry is behind the query point
-            // if ((*lut_bin)[high] + max_range < lut_space_x) return std::make_pair(max_range, max_range);
+            // if ((*lut_bin)[high] + max_range < lut_space_x) return std::make_pair(max_range,
+            // max_range);
             if ((*lut_bin)[high] < lut_space_x)
-                return std::make_pair(max_range, std::min(max_range, lut_space_x - (*lut_bin)[high]));
+                return std::make_pair(max_range,
+                                      std::min(max_range, lut_space_x - (*lut_bin)[high]));
             // TODO might need another early return case here
-            // return std::make_pair(max_range, std::min(max_range, lut_space_x - (*lut_bin)[high]));
-            // the query point is on top of a occupied pixel
-            // this call is here rather than at the beginning, because it is apparently more efficient.
-            // I presume that this has to do with the previous two return statements
+            // return std::make_pair(max_range, std::min(max_range, lut_space_x -
+            // (*lut_bin)[high])); the query point is on top of a occupied pixel this call is here
+            // rather than at the beginning, because it is apparently more efficient. I presume that
+            // this has to do with the previous two return statements
             if (map.isOccupied(x, y)) {
                 std::make_pair(0.0, 0.0);
             }
@@ -688,9 +706,11 @@ class CDDTCast : public RangeMethod {
             float val;
             int index;
             if (high > _BINARY_SEARCH_THRESHOLD) {
-                // once the binary search terminates, the next greatest element is indicated by 'val'
-                // float val = *std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x);
-                index = std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) - lut_bin->begin();
+                // once the binary search terminates, the next greatest element is indicated by
+                // 'val' float val = *std::lower_bound(lut_bin->begin(), lut_bin->end(),
+                // lut_space_x);
+                index = std::lower_bound(lut_bin->begin(), lut_bin->end(), lut_space_x) -
+                        lut_bin->begin();
                 val = (*lut_bin)[index];
             }
             else {  // do linear search if array is very small
@@ -736,7 +756,10 @@ class CDDTCast : public RangeMethod {
         (*ss) << std::endl;
         (*ss) << T1 << "max_range: " << max_range << std::endl;
         (*ss) << T1 << "map: " << std::endl;
-        (*ss) << T2 << "# note: map data is width and then height (width is number of rows) transposed from expectation:" << std::endl;
+        (*ss) << T2
+              << "# note: map data is width and then height (width is number of rows) transposed "
+                 "from expectation:"
+              << std::endl;
         (*ss) << T2 << "path: " << map.filename() << std::endl;
         (*ss) << T2 << "width: " << map.width() << std::endl;
         (*ss) << T2 << "height: " << map.height() << std::endl;
@@ -779,15 +802,15 @@ class CDDTCast : public RangeMethod {
         (*ss) << "," << std::endl;
         (*ss) << J1 << "\"max_range\":" << max_range << "," << std::endl;
         (*ss) << J1 << "\"map\": {" << std::endl;
-        // (*ss) << J2 << "# note: map data is width and then height (width is number of rows) transposed from expectation:"  << std::endl;
+        // (*ss) << J2 << "# note: map data is width and then height (width is number of rows)
+        // transposed from expectation:"  << std::endl;
         (*ss) << J2 << "\"path\": \"" << map.filename() << "\"," << std::endl;
         (*ss) << J2 << "\"width\": " << map.width() << "," << std::endl;
         (*ss) << J2 << "\"height\": " << map.height() << "," << std::endl;
 
         (*ss) << J2 << "\"data\": [";  // utils::serialize(map.grid()[0], ss);
         for (int i = 0; i < map.width(); ++i) {
-            if (i > 0)
-                (*ss) << ",";
+            if (i > 0) (*ss) << ",";
             utils::serialize(map.grid()[i], ss);
         }
         (*ss) << "]," << std::endl;
@@ -805,8 +828,7 @@ class CDDTCast : public RangeMethod {
             (*ss) << J3 << "\"zeros\": [";
 
             for (int j = 0; j < compressed_lut[i].size(); ++j) {
-                if (j > 0)
-                    (*ss) << ",";
+                if (j > 0) (*ss) << ",";
                 utils::serialize(compressed_lut[i][j], ss);
             }
             (*ss) << "]" << std::endl;

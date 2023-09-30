@@ -27,24 +27,22 @@
 
 // DEFINE_bool(big_menu, true, "Include 'advanced' options in the menu listing");
 DEFINE_string(method, "RayMarching",
-              "Which range method to use, one of:\n  BresenhamsLine (or bl)\n  RayMarching (or rm)\n  CDDTCast (or cddt)\n  PrunedCDDTCast (or pcddt)\n  GiantLUTCast (or glt)\n");
+              "Which range method to use, one of:\n  BresenhamsLine (or bl)\n  RayMarching (or "
+              "rm)\n  CDDTCast (or cddt)\n  PrunedCDDTCast (or pcddt)\n  GiantLUTCast (or glt)\n");
 
-DEFINE_string(map_path, "BASEMENT_MAP",
-              "Path to map image, relative to current directory");
+DEFINE_string(map_path, "BASEMENT_MAP", "Path to map image, relative to current directory");
 
-DEFINE_string(cddt_save_path, "",
-              "Path to serialize CDDT data structure to.");
+DEFINE_string(cddt_save_path, "", "Path to serialize CDDT data structure to.");
 
-DEFINE_string(log_path, "",
-              "Where to store high fidelity logs, does not save if not specified.");
+DEFINE_string(log_path, "", "Where to store high fidelity logs, does not save if not specified.");
 
-DEFINE_string(which_benchmark, "",
-              "Which benchmark to run, one of:\n  random\n  grid\n");
+DEFINE_string(which_benchmark, "", "Which benchmark to run, one of:\n  random\n  grid\n");
 
-DEFINE_string(query, "",
-              "Query point x,y,theta to ray cast from. example: --query=0,0,3.14");
+DEFINE_string(query, "", "Query point x,y,theta to ray cast from. example: --query=0,0,3.14");
 
-DEFINE_string(trace_path, "", "Path to output trace map of memory access pattern. Works for Bresenham's Line or Ray Marching.");
+DEFINE_string(trace_path, "",
+              "Path to output trace map of memory access pattern. Works for Bresenham's Line or "
+              "Ray Marching.");
 
 DEFINE_string(lut_slice_path, "", "Path to output a slice of the LUT.");
 DEFINE_string(lut_slice_theta, "1.57", "Which LUT slice to output");
@@ -77,15 +75,13 @@ void save_log(std::stringstream &log, const char *fn)
     file.close();
 }
 
-void save_log(std::stringstream &log, std::string path)
-{
-    save_log(log, path.c_str());
-}
+void save_log(std::stringstream &log, std::string path) { save_log(log, path.c_str()); }
 
 int main(int argc, char *argv[])
 {
     // set usage message
-    std::string usage("This library provides fast 2D ray casting on occupancy grid maps. Sample usage:\n\n");
+    std::string usage(
+        "This library provides fast 2D ray casting on occupancy grid maps. Sample usage:\n\n");
     usage += "   ";
     usage += argv[0];
     google::SetUsageMessage(usage);
@@ -120,8 +116,7 @@ int main(int argc, char *argv[])
         summary << "method,construction_time,memory_bytes" << std::endl;
     }
 
-    if (map.error())
-        return 1;
+    if (map.error()) return 1;
 
     float query_y, query_x, query_t;
     if (!FLAGS_trace_path.empty()) {
@@ -139,7 +134,8 @@ int main(int argc, char *argv[])
         BresenhamsLine bl = BresenhamsLine(map, MAX_DISTANCE);
         auto construction_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> construction_dur =
-            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end - construction_start);
+            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end -
+                                                                      construction_start);
 
         std::cout << "...Running grid benchmark" << std::endl;
         Benchmark<BresenhamsLine> mark = Benchmark<BresenhamsLine>(bl);
@@ -166,7 +162,8 @@ int main(int argc, char *argv[])
             bl.getMap()->saveTrace(FLAGS_trace_path);
 // mark.getMap()->saveTrace(FLAGS_trace_path);
 #else
-            std::cout << "...CANNOT SAVE TRACE, first #define _MAKE_TRACE_MAP 1 to generate trace." << std::endl;
+            std::cout << "...CANNOT SAVE TRACE, first #define _MAKE_TRACE_MAP 1 to generate trace."
+                      << std::endl;
 #endif
         }
 
@@ -181,7 +178,8 @@ int main(int argc, char *argv[])
         RayMarching rm = RayMarching(map, MAX_DISTANCE);
         auto construction_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> construction_dur =
-            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end - construction_start);
+            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end -
+                                                                      construction_start);
         Benchmark<RayMarching> mark = Benchmark<RayMarching>(rm);
         std::cout << "...construction time: " << construction_dur.count() << std::endl;
         std::cout << "...memory usage (MB): " << rm.memory() / MB << std::endl;
@@ -207,7 +205,8 @@ int main(int argc, char *argv[])
             rm.getMap()->saveTrace(FLAGS_trace_path);
 // mark.getMap()->saveTrace(FLAGS_trace_path);
 #else
-            std::cout << "...CANNOT SAVE TRACE, first #define _MAKE_TRACE_MAP 1 to generate trace." << std::endl;
+            std::cout << "...CANNOT SAVE TRACE, first #define _MAKE_TRACE_MAP 1 to generate trace."
+                      << std::endl;
 #endif
         }
 
@@ -216,12 +215,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (utils::has("CDDTCast", methods) || utils::has("cddt", methods) || utils::has("PrunedCDDTCast", methods) || utils::has("pcddt", methods)) {
+    if (utils::has("CDDTCast", methods) || utils::has("cddt", methods) ||
+        utils::has("PrunedCDDTCast", methods) || utils::has("pcddt", methods)) {
         auto construction_start = std::chrono::high_resolution_clock::now();
         CDDTCast rc = CDDTCast(map, MAX_DISTANCE, THETA_DISC);
         auto construction_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> construction_dur =
-            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end - construction_start);
+            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end -
+                                                                      construction_start);
 
         double const_dur = 0;
         if (utils::has("CDDTCast", methods) || utils::has("cddt", methods)) {
@@ -258,7 +259,8 @@ int main(int argc, char *argv[])
             if (DO_LOG) {
                 tlog.str("");
                 mark.set_log(&tlog);
-                summary << "pcddt," << construction_dur.count() + prune_dur.count() << "," << rc.memory() << std::endl;
+                summary << "pcddt," << construction_dur.count() + prune_dur.count() << ","
+                        << rc.memory() << std::endl;
             }
             if (FLAGS_which_benchmark == "grid")
                 mark.grid_sample(GRID_STEP, GRID_RAYS, GRID_SAMPLES);
@@ -284,7 +286,8 @@ int main(int argc, char *argv[])
         GiantLUTCast glt = GiantLUTCast(map, MAX_DISTANCE, THETA_DISC);
         auto construction_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> construction_dur =
-            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end - construction_start);
+            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end -
+                                                                      construction_start);
 
         Benchmark<GiantLUTCast> mark = Benchmark<GiantLUTCast>(glt);
         std::cout << "...lut size (MB): " << glt.memory() / MB << std::endl;
@@ -301,7 +304,8 @@ int main(int argc, char *argv[])
             mark.random_sample(RANDOM_SAMPLES);
 
         if (!FLAGS_lut_slice_path.empty()) {
-            std::cout << "...saving LUT slice theta=" << FLAGS_lut_slice_theta << " to: " << FLAGS_lut_slice_path << std::endl;
+            std::cout << "...saving LUT slice theta=" << FLAGS_lut_slice_theta
+                      << " to: " << FLAGS_lut_slice_path << std::endl;
             float theta = std::stof(FLAGS_lut_slice_theta);
             glt.get_slice(theta)->save(FLAGS_lut_slice_path);
         }
@@ -317,15 +321,18 @@ int main(int argc, char *argv[])
         RayMarchingGPU rmgpu = RayMarchingGPU(map, MAX_DISTANCE);
         auto construction_end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> construction_dur =
-            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end - construction_start);
+            std::chrono::duration_cast<std::chrono::duration<double>>(construction_end -
+                                                                      construction_start);
         std::cout << "...construction time: " << construction_dur.count() << std::endl;
 
         if (FLAGS_which_benchmark == "grid") {
-            int num_samples = Benchmark<RayMarching>::num_grid_samples(GRID_STEP, GRID_RAYS, GRID_SAMPLES, map.width, map.height);
+            int num_samples = Benchmark<RayMarching>::num_grid_samples(
+                GRID_STEP, GRID_RAYS, GRID_SAMPLES, map.width, map.height);
             float *samples = new float[num_samples * 3];
             float *outs = new float[num_samples];
 
-            Benchmark<RayMarching>::get_grid_samples(samples, GRID_STEP, GRID_RAYS, GRID_SAMPLES, map.width, map.height);
+            Benchmark<RayMarching>::get_grid_samples(samples, GRID_STEP, GRID_RAYS, GRID_SAMPLES,
+                                                     map.width, map.height);
             // warmup
             rmgpu.calc_range_many(samples, outs, num_samples);
 
@@ -335,12 +342,12 @@ int main(int argc, char *argv[])
             std::chrono::duration<double> mark_dur =
                 std::chrono::duration_cast<std::chrono::duration<double>>(mark_end - mark_start);
             std::cout << "...benchmark time: " << mark_dur.count() << std::endl;
-            std::cout << ".....avg time per ray cast: " << mark_dur.count() / num_samples << std::endl;
+            std::cout << ".....avg time per ray cast: " << mark_dur.count() / num_samples
+                      << std::endl;
             std::cout << ".....rays cast: " << num_samples << std::endl;
 
             // print first few outputs for sanity checking
-            for (int i = 0; i < 10; ++i)
-                std::cout << outs[i] << std::endl;
+            for (int i = 0; i < 10; ++i) std::cout << outs[i] << std::endl;
         }
 
         if (FLAGS_which_benchmark == "random") {
@@ -348,33 +355,40 @@ int main(int argc, char *argv[])
             float *outs = new float[RANDOM_SAMPLES];
 
             // warm up
-            Benchmark<RayMarching>::get_random_samples(samples, RANDOM_SAMPLES, map.width, map.height);
+            Benchmark<RayMarching>::get_random_samples(samples, RANDOM_SAMPLES, map.width,
+                                                       map.height);
             rmgpu.calc_range_many(samples, outs, RANDOM_SAMPLES);
-            Benchmark<RayMarching>::get_random_samples(samples, RANDOM_SAMPLES, map.width, map.height);
+            Benchmark<RayMarching>::get_random_samples(samples, RANDOM_SAMPLES, map.width,
+                                                       map.height);
             rmgpu.calc_range_many(samples, outs, RANDOM_SAMPLES);
 
-            Benchmark<RayMarching>::get_random_samples(samples, RANDOM_SAMPLES, map.width, map.height);
+            Benchmark<RayMarching>::get_random_samples(samples, RANDOM_SAMPLES, map.width,
+                                                       map.height);
             auto mark_start = std::chrono::high_resolution_clock::now();
             rmgpu.calc_range_many(samples, outs, RANDOM_SAMPLES);
             auto mark_end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> mark_dur =
                 std::chrono::duration_cast<std::chrono::duration<double>>(mark_end - mark_start);
             std::cout << "...benchmark time: " << mark_dur.count() << std::endl;
-            std::cout << ".....avg time per ray cast: " << mark_dur.count() / RANDOM_SAMPLES << std::endl;
+            std::cout << ".....avg time per ray cast: " << mark_dur.count() / RANDOM_SAMPLES
+                      << std::endl;
             std::cout << ".....rays cast: " << RANDOM_SAMPLES << std::endl;
 
             // RayMarching rm = RayMarching(map, MAX_DISTANCE);
             // for (int i = 0; i < RANDOM_SAMPLES; ++i) {
-            // 	if (std::abs(outs[i] - rm.calc_range(samples[3*i], samples[3*i+1], samples[3*i+2])) > 2) {
-            // 		std::cout << "x: " << samples[3*i] << " y: " << samples[3*i+1] << " t: " << samples[3*i+2] << std::endl;
-            // 		std::cout << "   expected: " << rm.calc_range(samples[3*i], samples[3*i+1], samples[3*i+2]) << std::endl;
-            // 		std::cout << "   got: " << outs[i] << std::endl;
+            // 	if (std::abs(outs[i] - rm.calc_range(samples[3*i], samples[3*i+1], samples[3*i+2]))
+            // > 2) { 		std::cout << "x: " << samples[3*i] << " y: " << samples[3*i+1] << " t: " <<
+            // samples[3*i+2] << std::endl; 		std::cout << "   expected: " <<
+            // rm.calc_range(samples[3*i], samples[3*i+1], samples[3*i+2]) << std::endl; 		std::cout
+            // << "   got: " << outs[i] << std::endl;
             // 	}
             // }
         }
 
 #else
-        std::cout << "\nNot compiled with CUDA enabled, please enable flag -DWITH_CUDA=ON to run RayMarchingGPU benchmarks." << std::endl;
+        std::cout << "\nNot compiled with CUDA enabled, please enable flag -DWITH_CUDA=ON to run "
+                     "RayMarchingGPU benchmarks."
+                  << std::endl;
 #endif
     }
 

@@ -35,16 +35,10 @@ unsigned long xorshf96(void)
 /// @param[in] g color intensity value
 /// @param[in] b color intensity value
 /// @return mixed pixel value
-float rgb2gray(float r, float g, float b)
-{
-    return 0.229 * r + 0.587 * g + 0.114 * b;
-}
+float rgb2gray(float r, float g, float b) { return 0.229 * r + 0.587 * g + 0.114 * b; }
 
 /// @brief Random value within range
-int randrange(int min, int max)
-{
-    return min + (rand() % (int)(max - min + 1));
-}
+int randrange(int min, int max) { return min + (rand() % (int)(max - min + 1)); }
 
 std::vector<std::pair<int, int>> outline(int x, int y, bool use_corners)
 {
@@ -93,8 +87,8 @@ class KeyMaker {
     }
     std::tuple<int, int, int> unpack_key(key_T k)
     {
-        return std::make_tuple((int)((k & x_mask) >> x_shift),
-                               (int)((k & y_mask) >> y_shift), k & t_mask);
+        return std::make_tuple((int)((k & x_mask) >> x_shift), (int)((k & y_mask) >> y_shift),
+                               k & t_mask);
     }
 
    private:
@@ -144,8 +138,8 @@ double norminv(double q)
     double d2 = 0.189269;
     double d3 = 0.001308;
 
-    double x = t - (c0 + c1 * t + c2 * pow(t, 2.0)) /
-                       (1.0 + d1 * t + d2 * pow(t, 2.0) + d3 * pow(t, 3.0));
+    double x =
+        t - (c0 + c1 * t + c2 * pow(t, 2.0)) / (1.0 + d1 * t + d2 * pow(t, 2.0) + d3 * pow(t, 3.0));
 
     if (q > .5) x *= -1.0;
 
@@ -228,8 +222,7 @@ class FastRand {
         // cache.empty();
         // for (int i = 0; i < cache_size; ++i) cache.push_back(std::rand() /
         // (float)RAND_MAX);
-        for (int i = 0; i < cache_size; ++i)
-            cache[i] = std::rand() / (float)RAND_MAX;
+        for (int i = 0; i < cache_size; ++i) cache[i] = std::rand() / (float)RAND_MAX;
     }
     int i = 0;
     int cache_size;

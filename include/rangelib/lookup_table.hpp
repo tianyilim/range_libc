@@ -18,23 +18,22 @@ class GiantLUTCast : public RangeMethod {
     /// @brief Returns a LUT index based on the discretized inputs
     inline size_t getLutIdx(size_t x, size_t y, size_t theta)
     {
-        return theta +
-               y * _thetaDiscretization +
-               x * _thetaDiscretization * _height;
+        return theta + y * _thetaDiscretization + x * _thetaDiscretization * _height;
     }
 
     /// @brief Constructor.
     /// @param[in] m Input Occupancy Grid Map
     /// @param[in] mr Max range
     /// @param[in] td theta discretization
-    GiantLUTCast(OMap m, float mr, int td) : _height{m.height()},
-                                             _width{m.width()},
-                                             _thetaDiscretization{td},
-                                             RangeMethod(m, mr),
-                                             _thetaDiscretization_div_M_2PI{(float)_thetaDiscretization / M_2PI},
-                                             _M_2PI_div_thetaDiscretization{M_2PI / (float)_thetaDiscretization},
-                                             _maxDivLimits{max_range / std::numeric_limits<uint16_t>::max()},
-                                             _limitsDivMax{std::numeric_limits<uint16_t>::max() / max_range}
+    GiantLUTCast(OMap m, float mr, int td)
+        : _height{m.height()},
+          _width{m.width()},
+          _thetaDiscretization{td},
+          RangeMethod(m, mr),
+          _thetaDiscretization_div_M_2PI{(float)_thetaDiscretization / M_2PI},
+          _M_2PI_div_thetaDiscretization{M_2PI / (float)_thetaDiscretization},
+          _maxDivLimits{max_range / std::numeric_limits<uint16_t>::max()},
+          _limitsDivMax{std::numeric_limits<uint16_t>::max() / max_range}
     {
         // To initalize the LUT, use Ray Marching
         RayMarching seed_cast = RayMarching(m, mr);
@@ -58,23 +57,19 @@ class GiantLUTCast : public RangeMethod {
         }
     }
 
-    int lut_size()
-    {
-        return map.width() * map.height() * _thetaDiscretization * sizeof(lut_t);
-    }
+    int lut_size() { return map.width() * map.height() * _thetaDiscretization * sizeof(lut_t); }
 
     int memory() { return lut_size(); }
 
-    /// @brief takes a continuous theta space and returns the nearest theta in the discrete LUT space
-    /// as well as the bin index that the given theta falls into
+    /// @brief takes a continuous theta space and returns the nearest theta in the discrete LUT
+    /// space as well as the bin index that the given theta falls into
     /// @param[in] theta the angle
     /// @return the discretized value
     int discretize_theta(float theta)
     {
         theta = fmod(theta, M_2PI);
         // fmod does not wrap the angle into the positive range, so this will fix that if necessary
-        if (theta < 0.0)
-            theta += M_2PI;
+        if (theta < 0.0) theta += M_2PI;
 
 #if _USE_FAST_ROUND == 1
         int rounded = int(theta * _thetaDiscretization_div_M_2PI + 0.5);
@@ -105,7 +100,8 @@ class GiantLUTCast : public RangeMethod {
     /// @return a DistanceTransform unique_ptr
     std::unique_ptr<DistanceTransform> get_slice(float theta)
     {
-        std::unique_ptr<DistanceTransform> slice = std::make_unique<DistanceTransform>(_width, _height);
+        std::unique_ptr<DistanceTransform> slice =
+            std::make_unique<DistanceTransform>(_width, _height);
         const int dtheta = discretize_theta(theta);
 
         size_t idx = dtheta;  // iterator index

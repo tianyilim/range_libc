@@ -6,6 +6,8 @@
 #define _EPSILON 0.00001
 #define M_2PI 2 * M_PI
 
+// TODO fix with updated API
+
 namespace ranges {
 /// @brief Parent class of all range methods
 class RangeMethod {
@@ -16,7 +18,10 @@ class RangeMethod {
 
     virtual float calc_range(float x, float y, float heading) = 0;
 
-    virtual std::pair<float, float> calc_range_pair(float x, float y, float heading) { return std::make_pair(-1, -1); }
+    virtual std::pair<float, float> calc_range_pair(float x, float y, float heading)
+    {
+        return std::make_pair(-1, -1);
+    }
 
     virtual OMap *getMap() { return &map; }
 
@@ -68,7 +73,8 @@ class RangeMethod {
         }
     }
 
-    void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles, int num_angles)
+    void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles,
+                                 int num_angles)
     {
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
@@ -111,13 +117,13 @@ class RangeMethod {
         // convert the sensor model from a numpy array to a vector array
         for (int i = 0; i < table_width; ++i) {
             std::vector<double> table_row;
-            for (int j = 0; j < table_width; ++j)
-                table_row.push_back(table[table_width * i + j]);
+            for (int j = 0; j < table_width; ++j) table_row.push_back(table[table_width * i + j]);
             sensor_model.push_back(table_row);
         }
     }
 
-    void eval_sensor_model(float *obs, float *ranges, double *outs, int rays_per_particle, int particles)
+    void eval_sensor_model(float *obs, float *ranges, double *outs, int rays_per_particle,
+                           int particles)
     {
         float inv_world_scale = 1.0 / map._worldScale;
         // do no allocations in the main loop
@@ -138,7 +144,9 @@ class RangeMethod {
     }
 
     // calc range for each pose, adding every angle, evaluating the sensor model
-    void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs, double *weights, int num_particles, int num_angles)
+    void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs,
+                                                    double *weights, int num_particles,
+                                                    int num_angles)
     {
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
@@ -193,7 +201,8 @@ class RangeMethod {
 
     // this is to compute a lidar sensor model using radial (calc_range_pair) optimizations
     // this is only exact for a certain set of downsample amounts
-    void calc_range_many_radial_optimized(float *ins, float *outs, int num_particles, int num_rays, float min_angle, float max_angle)
+    void calc_range_many_radial_optimized(float *ins, float *outs, int num_particles, int num_rays,
+                                          float min_angle, float max_angle)
     {
         // cache these constants on the stack for efficiency
         float inv_world_scale = 1.0 / map._worldScale;
@@ -252,7 +261,8 @@ class RangeMethod {
     }
 
    protected:
-    OMap map;  // TODO perhaps dont store an OMap and a DistanceTransform simultaneously. Or just store a DistanceTransform?
+    OMap map;  // TODO perhaps dont store an OMap and a DistanceTransform simultaneously. Or just
+               // store a DistanceTransform?
     float max_range;
 
     std::vector<std::vector<double>> sensor_model;

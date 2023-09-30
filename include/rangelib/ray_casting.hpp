@@ -8,10 +8,7 @@ namespace ranges {
 
 class RayMarching : public RangeMethod {
    public:
-    RayMarching(OMap m, float mr) : RangeMethod(m, mr)
-    {
-        _distImage = DistanceTransform(m);
-    }
+    RayMarching(OMap m, float mr) : RangeMethod(m, mr) { _distImage = DistanceTransform(m); }
 
     float calc_range(const float x, const float y, const float heading)
     {
