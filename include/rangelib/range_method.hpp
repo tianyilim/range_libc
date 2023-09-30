@@ -26,9 +26,30 @@ class RangeMethod {
           _worldOriginY{_distTransform.worldValues().worldOriginY},
           _worldSinAngle{_distTransform.worldValues().worldSinAngle},
           _worldCosAngle{_distTransform.worldValues().worldCosAngle},
-          _rotationConst{-1.0f * _worldAngle - 3.0f * (float)M_PI / 2.0f} {};
+          _rotationConst{-1.0f * _worldAngle - 3.0f * (float)M_PI / 2.0f}
+    {
+    }
 
     virtual ~RangeMethod(){};
+
+    /// @brief Copy Constructor
+    /// @param r Other
+    RangeMethod(const RangeMethod &r)
+        : _distTransform(r._distTransform),
+          _maxRange(r._maxRange),
+          _worldScale{r._worldScale},
+          _invWorldScale{r._invWorldScale},
+          _worldAngle{r._worldAngle},
+          _worldOriginX{r._worldOriginX},
+          _worldOriginY{r._worldOriginY},
+          _worldSinAngle{r._worldSinAngle},
+          _worldCosAngle{r._worldCosAngle},
+          _rotationConst{r._rotationConst},
+          _sensorModel{r._sensorModel}
+    {
+    }
+
+    // TODO figure out move/copy assignment
 
     /// @brief Base function to give the range measurement at this pose.
     virtual float calc_range(float x, float y, float heading) const = 0;
@@ -101,7 +122,7 @@ class RangeMethod {
             for (int j = 0; j < table_width; ++j) {
                 table_row.push_back(table[table_width * i + j]);
             }
-            sensor_model.push_back(table_row);
+            _sensorModel.push_back(table_row);
         }
     }
 
@@ -126,11 +147,11 @@ class RangeMethod {
                 d = ranges[i * rays_per_particle + j] * _invWorldScale;
 
                 // Clamp
-                r = std::min<float>(std::max<float>(r, 0.0), (float)sensor_model.size() - 1.0);
-                d = std::min<float>(std::max<float>(d, 0.0), (float)sensor_model.size() - 1.0);
+                r = std::min<float>(std::max<float>(r, 0.0), (float)_sensorModel.size() - 1.0);
+                d = std::min<float>(std::max<float>(d, 0.0), (float)_sensorModel.size() - 1.0);
 
                 // Discretize and evaluate
-                weight *= sensor_model[(int)r][(int)d];
+                weight *= _sensorModel[(int)r][(int)d];
             }
             outs[i] = weight;  // weight each particle
         }
@@ -164,11 +185,11 @@ class RangeMethod {
                 d = calc_range(y, x, theta - angles[angleIdx]);
 
                 // Clamp
-                r = std::min<float>(std::max<float>(r, 0.0), (float)sensor_model.size() - 1.0);
-                d = std::min<float>(std::max<float>(d, 0.0), (float)sensor_model.size() - 1.0);
+                r = std::min<float>(std::max<float>(r, 0.0), (float)_sensorModel.size() - 1.0);
+                d = std::min<float>(std::max<float>(d, 0.0), (float)_sensorModel.size() - 1.0);
 
                 // Discretize and evaluate
-                weight *= sensor_model[(int)r][(int)d];
+                weight *= _sensorModel[(int)r][(int)d];
             }
             weights[particleIdx] = weight;
         }
@@ -213,10 +234,6 @@ class RangeMethod {
         return;
     }
 
-   protected:
-    DistanceTransform _distTransform;
-    const float _maxRange;
-
     /// @brief Convert world coordinates into map-discretized values
     inline Pose2Df_t mapCoordinates(float x, float y, float theta)
     {
@@ -233,11 +250,15 @@ class RangeMethod {
         return {xMap, yMap, thetaMap};
     }
 
+   protected:
+    DistanceTransform _distTransform;
+    const float _maxRange;
+
     /// @brief map-specific parameters
     const float _worldScale, _invWorldScale, _worldAngle, _worldOriginX, _worldOriginY,
         _worldSinAngle, _worldCosAngle, _rotationConst;
 
-    std::vector<std::vector<double>> sensor_model;
+    std::vector<std::vector<double>> _sensorModel;
 };
 
 }  // namespace ranges
