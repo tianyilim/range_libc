@@ -12,12 +12,30 @@
 namespace ranges {
 
 struct WorldValues {
-    float worldScale;
-    float worldAngle;
-    float worldOriginX;
-    float worldOriginY;
-    float worldSinAngle;
-    float worldCosAngle;
+    WorldValues() {}
+
+    /// @brief Value constructor
+    WorldValues(float worldScale_, float worldAngle_, float worldOriginX_, float worldOriginY_,
+                float worldSinAngle_, float worldCosAngle_)
+        : worldScale{worldScale_},
+          worldAngle{worldAngle_},
+          worldOriginX{worldOriginX_},
+          worldOriginY{worldOriginY_},
+          worldSinAngle{worldSinAngle_},
+          worldCosAngle{worldCosAngle_}
+    {
+    }
+
+    // TODO make these const. In order to do so, need to setup the move/copy assignment operator for
+    // TODO OMap
+
+    // Implement default values
+    float worldScale = 1.0;
+    float worldAngle = 0.0;
+    float worldOriginX = 0.0;
+    float worldOriginY = 0.0;
+    float worldSinAngle = 0.0;
+    float worldCosAngle = 1.0;
 
     inline bool operator==(const WorldValues &other) const
     {
