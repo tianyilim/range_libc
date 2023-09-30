@@ -89,6 +89,8 @@ add_executable(
 	test_rangelib
 	test/test_omap.cpp
 	test/test_bl.cpp
+	test/test_glt.cpp
+	test/test_ray_marching.cpp
 )
 target_link_libraries(
 	test_rangelib

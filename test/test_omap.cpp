@@ -174,24 +174,3 @@ TEST(OMapTest, EdgeMapTest)
 
     // TODO check functionality of this edge map
 }
-
-TEST(OMapTest, DistTransformImageConstructor_Impl)
-{
-    const std::string filename = "../../maps/tests/symm_box.png";
-    const int e_width = 120, e_height = 120;
-
-    ranges::OMap Impl_FileOMap(filename);
-    ranges::DistanceTransform Impl_OMapDT(Impl_FileOMap);
-
-    ASSERT_EQ(Impl_OMapDT.width(), e_width)
-        << "Filepath Constructor Width not " << e_width << ", was " << Impl_OMapDT.width();
-    EXPECT_EQ(Impl_OMapDT.height(), e_height)
-        << "Filepath Constructor Height not " << e_height << ", was " << Impl_OMapDT.height();
-    EXPECT_EQ(Impl_OMapDT.filename(), filename)
-        << "Filepath Constructor Filename not " << filename << ", was " << Impl_OMapDT.filename();
-
-    EXPECT_EQ(Impl_OMapDT.grid().size(), Impl_OMapDT.SDF().size())
-        << "OMap Constructor SDF and Occupancy Grid sizes not the same";
-
-    // TODO test implementation of Distance Transform
-}
