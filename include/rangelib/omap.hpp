@@ -18,6 +18,15 @@ struct WorldValues {
     float worldOriginY;
     float worldSinAngle;
     float worldCosAngle;
+
+    inline bool operator==(const WorldValues &other) const
+    {
+        return worldScale == other.worldScale && worldAngle == other.worldAngle &&
+               worldOriginX == other.worldOriginX && worldOriginY == other.worldOriginY &&
+               worldSinAngle == other.worldSinAngle && worldCosAngle == other.worldCosAngle;
+    }
+
+    inline bool operator!=(const WorldValues &other) const { return !(*this == other); }
 };
 
 /// @brief Occupancy Grid
@@ -165,10 +174,8 @@ class OMap {
     Grid_t &grid() { return _OccupancyGrid; }
 
     unsigned width() const { return _width; }
-    void setWidth(const unsigned w) { _width = w; }
 
     unsigned height() const { return _height; }
-    void setHeight(const unsigned h) { _height = h; }
 
     /// @brief filename accessor
     const std::string &filename() const { return _filename; }
