@@ -10,10 +10,13 @@ class BresenhamsLine : public RangeMethod {
    public:
     BresenhamsLine(OMap m, float mr) : RangeMethod(m, mr){};
 
-    // TODO this throws on out of range. But maybe it makes sense to just return max_range (over all
-    // rangeMethods)?
     float calc_range(const float x, const float y, const float heading) const override
     {
+        // Catch illegal array access
+        if (x < 0 || x >= _distTransform.width() || y < 0 || y >= _distTransform.height()) {
+            return _maxRange;
+        }
+
         // first check if the cell underneath the query point is occupied, if so return
         if (_distTransform.isOccupied((int)x, (int)y)) {
             return 0.0;

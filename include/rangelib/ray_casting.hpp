@@ -15,7 +15,7 @@ class RayMarching : public RangeMethod {
 
     float calc_range(const float x, const float y, const float heading) const override
     {
-        // early exit
+        // Catch illegal array access
         if (x < 0 || x >= _distTransform.width() || y < 0 || y >= _distTransform.height()) {
             return _maxRange;
         }

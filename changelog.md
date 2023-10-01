@@ -3,17 +3,13 @@
 - [ ] Add docs to each of the methods.
 
 ### [OMap](./include/rangelib/omap.hpp)
-- [ ] Make a copy assignment constructor for OMap
-- [ ] Make WorldValues members const
 - [ ] Test the `save` function in some way
 - [ ] Test edge Map functionality in some way
 
 ### [Range Method](./include/rangelib/range_method.hpp)
-- [ ] Make a copy assignment operator for Range Method
 - [ ] Put sensor model into 1d vector for faster indexing
 
 ### [Bresenhams](./include/rangelib/bresenhams.hpp)
-- [ ] `calc_range` throws out of range, but it would be better to simply return max range (like other methods)
 - [ ] Add test for Map Coordinate transform
 
 ### [Ray Casting](./include/rangelib/ray_casting.hpp)
@@ -31,6 +27,11 @@
 ### Housekeeping
 - Move implementation into `cpp` files
 - Rename headers to `hpp`
+
+## 01/10/2023
+- Added a copy assignment constructor for OMap and made WorldValues members const.
+- Will not add copy assignment to `RangeMethod` because otherwise const members cannot be made const.
+- Change Bresenham's implementation such that `calc_range` returns max range (like other methods)
 
 ## 30/09/2023
 - Added tests.

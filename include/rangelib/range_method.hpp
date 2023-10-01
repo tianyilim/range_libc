@@ -49,7 +49,21 @@ class RangeMethod {
     {
     }
 
-    // TODO figure out move/copy assignment
+    /// @brief Move constructor
+    RangeMethod(RangeMethod &&r)
+        : _maxRange(r._maxRange),
+          _worldScale{r._worldScale},
+          _invWorldScale{r._invWorldScale},
+          _worldAngle{r._worldAngle},
+          _worldOriginX{r._worldOriginX},
+          _worldOriginY{r._worldOriginY},
+          _worldSinAngle{r._worldSinAngle},
+          _worldCosAngle{r._worldCosAngle},
+          _rotationConst{r._rotationConst}
+    {
+        _distTransform = std::move(r._distTransform);
+        _sensorModel = std::move(r._sensorModel);
+    }
 
     /// @brief Base function to give the range measurement at this pose.
     virtual float calc_range(float x, float y, float heading) const = 0;

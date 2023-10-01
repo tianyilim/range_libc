@@ -48,9 +48,9 @@ TEST_F(BresenhamTest, RangeTest)
     EXPECT_FLOAT_EQ(Bresenham.calc_range(119, 119, 0), maxRange);
 
     // out-of-range
-    EXPECT_THROW(Bresenham.calc_range(120, 0, 0), std::invalid_argument);
-    EXPECT_THROW(Bresenham.calc_range(0, 120, 0), std::invalid_argument);
-    EXPECT_THROW(Bresenham.calc_range(120, 120, 0), std::invalid_argument);
+    EXPECT_NEAR(Bresenham.calc_range(120, 0, 0), maxRange, 0.01);
+    EXPECT_NEAR(Bresenham.calc_range(0, 120, 0), maxRange, 0.01);
+    EXPECT_NEAR(Bresenham.calc_range(120, 120, 0), maxRange, 0.01);
 }
 
 TEST_F(BresenhamTest, OtherFunctionTest)
