@@ -6,8 +6,7 @@ class GiantLUTTest : public ::testing::Test {
    protected:
     void SetUp() override
     {
-        ranges::WorldValues wv;
-        wv.worldScale = 0.5;
+        ranges::WorldValues wv(0.5, 0, 0, 0);
 
         BLTestOMap = ranges::OMap(filename);
         BLTestOMap.setWorldValues(wv);

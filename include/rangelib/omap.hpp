@@ -12,30 +12,25 @@
 namespace ranges {
 
 struct WorldValues {
-    WorldValues() {}
-
     /// @brief Value constructor
-    WorldValues(float worldScale_, float worldAngle_, float worldOriginX_, float worldOriginY_,
-                float worldSinAngle_, float worldCosAngle_)
+    WorldValues(float worldScale_ = 1.0, float worldAngle_ = 0.0, float worldOriginX_ = 0.0,
+                float worldOriginY_ = 0.0)
         : worldScale{worldScale_},
           worldAngle{worldAngle_},
           worldOriginX{worldOriginX_},
           worldOriginY{worldOriginY_},
-          worldSinAngle{worldSinAngle_},
-          worldCosAngle{worldCosAngle_}
+          worldSinAngle{sinf(worldAngle_)},
+          worldCosAngle{cosf(worldAngle_)}
     {
     }
 
-    // TODO make these const. In order to do so, need to setup the move/copy assignment operator for
-    // OMap
-
     // Implement default values
-    float worldScale = 1.0;
-    float worldAngle = 0.0;
-    float worldOriginX = 0.0;
-    float worldOriginY = 0.0;
-    float worldSinAngle = 0.0;
-    float worldCosAngle = 1.0;
+    const float worldScale;
+    const float worldAngle;
+    const float worldOriginX;
+    const float worldOriginY;
+    const float worldSinAngle;
+    const float worldCosAngle;
 
     inline bool operator==(const WorldValues &other) const
     {
@@ -103,6 +98,44 @@ class OMap {
                 _OccupancyGrid[x][y] = gray < threshold;
             }
         }
+    }
+
+    /// @brief Copy Constructor
+    OMap(const OMap &other)
+        : _width{other.width()},
+          _height{other.height()},
+          _filename{other.filename()},
+          _OccupancyGrid(other.grid())
+    {
+        _worldValuesPtr = std::make_unique<WorldValues>(
+            other._worldValuesPtr->worldScale, other._worldValuesPtr->worldAngle,
+            other._worldValuesPtr->worldOriginX, other._worldValuesPtr->worldOriginY);
+    }
+
+    /// @brief Move constructor
+    OMap(OMap &&other) : _width{other.width()}, _height{other.height()}, _filename{other.filename()}
+    {
+        _OccupancyGrid = std::move(other.grid());
+        _worldValuesPtr.swap(other._worldValuesPtr);
+    }
+
+    /// @brief Copy assignment Operator
+    OMap &operator=(const OMap &other)
+    {
+        if (this != &other)  // not a self-assignment
+        {
+            _width = other.width();
+            _height = other.height();
+            _filename = other.filename();
+
+            _OccupancyGrid = other.grid();
+
+            _worldValuesPtr = std::make_unique<WorldValues>(
+                other._worldValuesPtr->worldScale, other._worldValuesPtr->worldAngle,
+                other._worldValuesPtr->worldOriginX, other._worldValuesPtr->worldOriginY);
+        }
+
+        return *this;
     }
 
     /// @brief Return the occupancy at x, y
@@ -188,6 +221,8 @@ class OMap {
     /// @brief returns memory usage in bytes
     virtual inline int memory() const { return sizeof(bool) * _width * _height; }
 
+    ///@brief accessor view into _OccupancyGrid
+    const Grid_t &grid() const { return _OccupancyGrid; }
     ///@brief modifier view into _OccupancyGrid
     Grid_t &grid() { return _OccupancyGrid; }
 
@@ -199,11 +234,13 @@ class OMap {
     const std::string &filename() const { return _filename; }
 
     /// @brief World values const view
-    const WorldValues &worldValues() const { return _worldValues; }
-    /// @brief World values modifier view
-    WorldValues &worldValues() { return _worldValues; }
+    const WorldValues &worldValues() const { return *_worldValuesPtr; }
     /// @brief setter function for _worldValues
-    void setWorldValues(const WorldValues &wv) { _worldValues = wv; }
+    void setWorldValues(const WorldValues &wv)
+    {
+        _worldValuesPtr = std::make_unique<WorldValues>(wv.worldScale, wv.worldAngle,
+                                                        wv.worldOriginX, wv.worldOriginY);
+    }
 
    protected:
     // Members
@@ -211,8 +248,9 @@ class OMap {
     unsigned _height;       ///< y axis
     std::string _filename;  ///< filename of image
 
-    Grid_t _OccupancyGrid;     ///< Grid of boolean occupied/not-occupied values
-    WorldValues _worldValues;  ///< Real world parameters of the map
+    Grid_t _OccupancyGrid;  ///< Grid of boolean occupied/not-occupied values
+    std::unique_ptr<WorldValues> _worldValuesPtr =
+        std::make_unique<WorldValues>();  ///< Real world parameters of the map
 };
 
 class DistanceTransform : public OMap {
