@@ -43,6 +43,9 @@ TEST_F(GiantLUTTest, IndexTest)
     EXPECT_EQ(GiantLUT.getMap().width() * GiantLUT.getMap().height() * thetaDiscretization,
               GiantLUT.lutArraySize());
 
+    EXPECT_EQ(GiantLUT.lutHeight(), GiantLUT.getMap().height());
+    EXPECT_EQ(GiantLUT.lutWidth(), GiantLUT.getMap().width());
+
     unsigned i1, i2;  // index counters
 
     i1 = GiantLUT.getLutIdx(0, 0, 0);
@@ -94,10 +97,10 @@ TEST_F(GiantLUTTest, RangeTest)
     EXPECT_NEAR(GiantLUT.calc_range(0, 0, M_PIf / 2), maxRange, 0.01);
 
     // From edges of the square
-    EXPECT_NEAR(GiantLUT.calc_range(0, 21, 0), 21.0f, 0.01);
-    EXPECT_NEAR(GiantLUT.calc_range(21, 0, M_PIf / 2), 21.0f, 0.01);
-    EXPECT_NEAR(GiantLUT.calc_range(119, 21, M_PIf), 20.0f, 0.01);
-    EXPECT_NEAR(GiantLUT.calc_range(21, 119, -M_PIf / 2), 20.0f, 0.01);
+    EXPECT_NEAR(GiantLUT.calc_range(0, 21, 0), 21.0f, 0.01);             // from edge of square (x)
+    EXPECT_NEAR(GiantLUT.calc_range(21, 0, M_PIf / 2), 21.0f, 0.01);     // from edge of square (y)
+    EXPECT_NEAR(GiantLUT.calc_range(119, 21, M_PIf), 20.0f, 0.01);       // from edge of square (x)
+    EXPECT_NEAR(GiantLUT.calc_range(21, 119, -M_PIf / 2), 20.0f, 0.01);  // from edge of square (y)
 
     // angles pointing out of map
     EXPECT_NEAR(GiantLUT.calc_range(0, 0, -M_PIf / 2), maxRange, 0.01);
