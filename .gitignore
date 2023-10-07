@@ -9,3 +9,4 @@ pywrapper/watch.sh
 ._.*
 
 .vscode
+.cache
