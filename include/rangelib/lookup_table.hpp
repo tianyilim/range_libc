@@ -87,7 +87,7 @@ class GiantLUTCast : public RangeMethod {
     float calc_range(const float x, const float y, const float heading) const override
     {
         // check if this is still the case with different scaling
-        if (x < 0 || x >= _distTransform.width() || y < 0 || y >= _distTransform.height()) {
+        if (x < 0 || x >= _lutWidth || y < 0 || y >= _lutHeight) {
             return _maxRange;
         }
 
