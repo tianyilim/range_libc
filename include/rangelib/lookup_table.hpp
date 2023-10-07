@@ -1,6 +1,8 @@
 #ifndef RANGELIB_GIANT_LOOKUP_TABLE_HPP_
 #define RANGELIB_GIANT_LOOKUP_TABLE_HPP_
 
+#include <cmath>
+
 #include "rangelib/omap.hpp"
 #include "rangelib/range_method.hpp"
 #include "rangelib/ray_casting.hpp"
@@ -31,8 +33,8 @@ class GiantLUTCast : public RangeMethod {
           _lutHeight{map.height()},
           _lutWidth{map.width()},
           _thetaDiscretization{thetaDiscretization},
-          _thetaDiscretization_div_M_2PI{float(_thetaDiscretization / M_2PI)},
-          _M_2PI_div_thetaDiscretization{float(M_2PI / _thetaDiscretization)},
+          _thetaDiscretization_div_M_2PI{float(_thetaDiscretization / (M_PIf * 2))},
+          _M_2PI_div_thetaDiscretization{float((M_PIf * 2) / _thetaDiscretization)},
           _maxDivLimits{_maxRange / std::numeric_limits<uint16_t>::max()},
           _limitsDivMax{std::numeric_limits<uint16_t>::max() / _maxRange}
     {
@@ -58,6 +60,7 @@ class GiantLUTCast : public RangeMethod {
         }
     }
 
+    /// @brief returns the memory usage of the internal LUT.
     int lut_size() const { return _lutHeight * _lutWidth * _thetaDiscretization * sizeof(lut_t); }
 
     int memory() const override { return lut_size() + _distTransform.memory(); }
@@ -77,9 +80,8 @@ class GiantLUTCast : public RangeMethod {
 #else
         int rounded = (int)roundf(theta * _thetaDiscretization_div_M_2PI);
 #endif
-        int binned = rounded % _thetaDiscretization;
-
-        return binned;
+        // perhaps keep angle between (0, _thetaDiscretization-1).
+        return rounded % _thetaDiscretization;
     }
 
     float calc_range(const float x, const float y, const float heading) const override
@@ -118,6 +120,11 @@ class GiantLUTCast : public RangeMethod {
 
         return slice;
     }
+
+    unsigned lutHeight() const { return _lutHeight; }
+    unsigned lutWidth() const { return _lutWidth; }
+    unsigned lutThetaDiscretization() const { return _thetaDiscretization; }
+    unsigned lutArraySize() const { return _GiantLUT.size(); }
 
    protected:
     const unsigned _lutHeight, _lutWidth;        ///< dimensions of omap
