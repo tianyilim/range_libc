@@ -8,7 +8,7 @@ namespace ranges {
 
 class BresenhamsLine : public RangeMethod {
    public:
-    BresenhamsLine(OMap m, float mr) : RangeMethod(m, mr){};
+    BresenhamsLine(OMap map, float maxRange) : RangeMethod(map, maxRange){};
 
     float calc_range(const float x, const float y, const float heading) const override
     {

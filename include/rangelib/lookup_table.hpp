@@ -26,18 +26,18 @@ class GiantLUTCast : public RangeMethod {
     /// @param[in] m Input Occupancy Grid Map
     /// @param[in] mr Max range
     /// @param[in] td theta discretization
-    GiantLUTCast(OMap m, float mr, unsigned td)
-        : RangeMethod(m, mr),
-          _lutHeight{m.height()},
-          _lutWidth{m.width()},
-          _thetaDiscretization{td},
+    GiantLUTCast(OMap map, float maxRange, unsigned thetaDiscretization)
+        : RangeMethod(map, maxRange),
+          _lutHeight{map.height()},
+          _lutWidth{map.width()},
+          _thetaDiscretization{thetaDiscretization},
           _thetaDiscretization_div_M_2PI{float(_thetaDiscretization / M_2PI)},
           _M_2PI_div_thetaDiscretization{float(M_2PI / _thetaDiscretization)},
           _maxDivLimits{_maxRange / std::numeric_limits<uint16_t>::max()},
           _limitsDivMax{std::numeric_limits<uint16_t>::max() / _maxRange}
     {
         // To initalize the LUT, use Ray Marching
-        RayMarching seed_cast = RayMarching(m, mr);
+        RayMarching seed_cast = RayMarching(map, maxRange);
 
         _GiantLUT.resize(_lutHeight * _lutWidth * _thetaDiscretization);
         for (unsigned x = 0; x < _lutWidth; ++x) {

@@ -16,9 +16,9 @@ class RangeMethod {
     /// @brief Constructor.
     /// @param[in] m Input map
     /// @param[in] mr Max range of sensor
-    RangeMethod(OMap m, float mr)
-        : _distTransform(m),
-          _maxRange(mr),
+    RangeMethod(OMap map, float maxRange)
+        : _distTransform(map),
+          _maxRange(maxRange),
           _worldScale{_distTransform.worldValues().worldScale},
           _invWorldScale{1.0f / _worldScale},
           _worldAngle{_distTransform.worldValues().worldAngle},
@@ -253,7 +253,7 @@ class RangeMethod {
     {
         float xMap, yMap, thetaMap;
 
-        thetaMap = -theta + _rotationConst;
+        thetaMap = -theta + _rotationConst;  // note that rangelibc coord frame is different
 
         xMap = (x - _worldOriginX) * _invWorldScale;
         yMap = (y - _worldOriginY) * _invWorldScale;
