@@ -47,13 +47,13 @@ double distance(Line2d ray, Line2d lineSeg, Point2d& res)
     }
 
     double t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / den;
-    if (t < 0 || t > 1) {
+    if (t < -1e-6 || t > 1) {
         // std::cout << "t: " << t << " Not in forward projection of ray" << std::endl;
         return nanf("");
     }
 
     double u = ((p1.x - p3.x) * (p1.y - p2.y) - (p1.y - p3.y) * (p1.x - p2.x)) / den;
-    if (u < 0 || u > 1) {
+    if (u < -1e-6 || u > 1) {
         // std::cout << "u: " << u << " Not within target line segement" << std::endl;
         return nanf("");
     }
@@ -64,8 +64,8 @@ double distance(Line2d ray, Line2d lineSeg, Point2d& res)
     double pxu = p3.x + u * (p4.x - p3.x);
     double pyu = p3.y + u * (p4.y - p3.y);
 
-    if (fabs(pxt - pxu) > 100*std::numeric_limits<float>::epsilon() ||
-        fabs(pyt - pyu) > 100*std::numeric_limits<float>::epsilon()) {
+    if (fabs(pxt - pxu) > 100 * std::numeric_limits<float>::epsilon() ||
+        fabs(pyt - pyu) > 100 * std::numeric_limits<float>::epsilon()) {
         std::cout << "Disagreement t: (" << pxt << ", " << pyt << ") u: (" << pxu << ", " << pyu
                   << ")" << std::endl;
         return nanf("");
@@ -107,10 +107,6 @@ int main()
     // cube coords in map frame
     std::vector<Point2d> points{{21, 21}, {99, 21}, {99, 99}, {21, 99}};
 
-    // Option for using real ROS map
-    // const std::string filename = "../../maps/tests/f.png";
-    // ranges::WorldValues WorldVals(0.05, 0, -11.60654, -26.520793);
-
     const float maxRange = 999;
 
     ranges::OMap BLTestOMap(filename);
@@ -122,10 +118,9 @@ int main()
     // ranges::GiantLUTCast GiantLUTCast(BLTestOMap, maxRange, 180.0);
 
     // Let's view ranges
-
-    for (float x : {22}) {
-        for (float y : {0}) {
-            for (float heading = 0; heading < M_PI * 1.9; heading += M_PI / 4) {
+    for (float x : {0, 22}) {
+        for (float y : {0, -22, -99}) {
+            for (float heading = 0.05; heading < M_PI * 1.9; heading += M_PI / 4) {
                 float map_x, map_y, map_heading;
                 std::tie(map_x, map_y, map_heading) = Bresenham.mapCoordinates(x, y, heading);
 
@@ -136,23 +131,27 @@ int main()
                     {map_x, map_y},
                     {map_x + maxRange * cosf(map_heading), map_y + maxRange * sinf(map_heading)}};
 
+                // Compute analytic range. This will be useful to see the noise of each method
                 float analytic = std::min(distToProjection(ray, points), maxRange);
 
                 float ins[3] = {x, y, heading};
                 float bl[1] = {maxRange}, rm[1] = {maxRange}, glt[1] = {maxRange};
                 Bresenham.numpy_calc_range(ins, bl, 1);
                 RayMarching.numpy_calc_range(ins, rm, 1);
-
-                // Manual calculation
-
                 // GiantLUTCast.numpy_calc_range(ins, glt, 1);
 
-                std::cout << "Range at (map coords) x: " << map_x << " y: " << map_y
-                          << " heading: " << map_heading / M_PI * 180.0 << ": BL: " << bl[0]
-                          << " RM: " << rm[0] << " GLT: " << glt[0] << " Analytic: " << analytic
-                          << std::endl;
+                if (analytic != maxRange) {
+                    std::cout << "Range at (map coords) x: " << map_x << " y: " << map_y
+                              << " heading: " << map_heading / M_PI * 180.0 << ": BL: " << bl[0]
+                              << " RM: " << rm[0] << " GLT: " << glt[0] << " Analytic: " << analytic
+                              << std::endl;
+                }
             }
             std::cout << std::endl;
         }
     }
+
+    // Option for using real ROS map
+    // const std::string filename = "../../maps/tests/f.png";
+    // ranges::WorldValues WorldVals(0.05, 0, -11.60654, -26.520793);
 }
