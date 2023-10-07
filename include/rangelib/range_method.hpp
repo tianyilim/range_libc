@@ -26,8 +26,12 @@ class RangeMethod {
           _worldOriginY{_distTransform.worldValues().worldOriginY},
           _worldSinAngle{_distTransform.worldValues().worldSinAngle},
           _worldCosAngle{_distTransform.worldValues().worldCosAngle},
-          _rotationConst{-1.0f * _worldAngle - 3.0f * (float)M_PI / 2.0f}
+          _mapOriginX{_worldOriginX * _worldCosAngle - _worldOriginY * _worldSinAngle},
+          _mapOriginY{(_worldOriginX * _worldSinAngle + _worldOriginY * _worldCosAngle) +
+                      _distTransform.height() * _worldScale}
     {
+        std::cout << "World Origin X: " << _worldOriginX << " Y: " << _worldOriginY << std::endl;
+        std::cout << "  Map Origin X: " << _mapOriginX << " Y: " << _mapOriginY << std::endl;
     }
 
     virtual ~RangeMethod(){};
@@ -44,7 +48,8 @@ class RangeMethod {
           _worldOriginY{r._worldOriginY},
           _worldSinAngle{r._worldSinAngle},
           _worldCosAngle{r._worldCosAngle},
-          _rotationConst{r._rotationConst},
+          _mapOriginX{r._mapOriginX},
+          _mapOriginY{r._mapOriginY},
           _sensorModel{r._sensorModel}
     {
     }
@@ -59,7 +64,8 @@ class RangeMethod {
           _worldOriginY{r._worldOriginY},
           _worldSinAngle{r._worldSinAngle},
           _worldCosAngle{r._worldCosAngle},
-          _rotationConst{r._rotationConst}
+          _mapOriginX{r._mapOriginX},
+          _mapOriginY{r._mapOriginY}
     {
         _distTransform = std::move(r._distTransform);
         _sensorModel = std::move(r._sensorModel);
@@ -97,7 +103,7 @@ class RangeMethod {
 
         for (int i = 0; i < num_casts; ++i) {
             std::tie(x, y, theta) = mapCoordinates(ins[i * 3], ins[i * 3 + 1], ins[i * 3 + 2]);
-            outs[i] = calc_range(y, x, theta) * _worldScale;
+            outs[i] = calc_range(x, y, theta) * _worldScale;
         }
     }
 
@@ -118,7 +124,7 @@ class RangeMethod {
             std::tie(x, y, theta) = mapCoordinates(ins[i * 3], ins[i * 3 + 1], ins[i * 3 + 2]);
 
             for (int a = 0; a < num_angles; ++a) {
-                outs[i * num_angles + a] = calc_range(y, x, theta - angles[a]) * _worldScale;
+                outs[i * num_angles + a] = calc_range(x, y, theta - angles[a]) * _worldScale;
             }
         }
     }
@@ -196,7 +202,7 @@ class RangeMethod {
             for (int angleIdx = 0; angleIdx < num_angles; ++angleIdx) {
                 // Convert into map scale
                 r = obs[angleIdx] * _invWorldScale;
-                d = calc_range(y, x, theta - angles[angleIdx]);
+                d = calc_range(x, y, theta - angles[angleIdx]);
 
                 // Clamp
                 r = std::min<float>(std::max<float>(r, 0.0), (float)_sensorModel.size() - 1.0);
@@ -241,7 +247,7 @@ class RangeMethod {
             }
 
             for (int a = max_pairwise_index + 1; a < index_offset; ++a) {
-                outs[i * num_rays + a] = calc_range(y, x, theta - angle) * _worldScale;
+                outs[i * num_rays + a] = calc_range(x, y, theta - angle) * _worldScale;
                 angle += step;
             }
         }
@@ -249,17 +255,13 @@ class RangeMethod {
     }
 
     /// @brief Convert world coordinates into map-discretized values
-    inline Pose2Df_t mapCoordinates(float x, float y, float theta)
+    inline Pose2Df_t mapCoordinates(float x_world, float y_world, float theta_world)
     {
-        float xMap, yMap, thetaMap;
-
-        thetaMap = -theta + _rotationConst;  // note that rangelibc coord frame is different
-
-        xMap = (x - _worldOriginX) * _invWorldScale;
-        yMap = (y - _worldOriginY) * _invWorldScale;
-        float temp = xMap;
-        xMap = _worldCosAngle * xMap - _worldSinAngle * yMap;
-        yMap = _worldSinAngle * temp + _worldCosAngle * yMap;
+        float thetaMap = -(theta_world - _worldAngle);
+        float xMap =
+            ((x_world * _worldCosAngle - y_world * _worldSinAngle) - _mapOriginX) * _invWorldScale;
+        float yMap =
+            (_mapOriginY - (x_world * _worldSinAngle + y_world * _worldCosAngle)) * _invWorldScale;
 
         return {xMap, yMap, thetaMap};
     }
@@ -269,8 +271,15 @@ class RangeMethod {
     const float _maxRange;
 
     /// @brief map-specific parameters
-    const float _worldScale, _invWorldScale, _worldAngle, _worldOriginX, _worldOriginY,
-        _worldSinAngle, _worldCosAngle, _rotationConst;
+    const float _worldScale;     ///< Resolution of map (m/px)
+    const float _invWorldScale;  ///< Resolution (px/m)
+    const float _worldAngle;     ///< Yaw of map origin relative to image frame
+    const float _worldOriginX;   ///< x coords of bottom left px of map in world frame
+    const float _worldOriginY;   ///< y coords of bottom left px of map in world frame
+    const float _worldSinAngle;  ///< sin(_worldAngle)
+    const float _worldCosAngle;  ///< cos(_worldAngle)
+    const float _mapOriginX;  ///< x coords of top left px of map (rangelibc origin) in world frame
+    const float _mapOriginY;  ///< y coords of top left px of map (rangelibc origin) in world frame
 
     std::vector<std::vector<double>> _sensorModel;
 };
