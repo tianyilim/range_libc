@@ -53,7 +53,7 @@ TEST_F(BresenhamTest, RangeTest)
     EXPECT_NEAR(Bresenham.calc_range(120, 120, 0), maxRange, 0.01);
 }
 
-TEST_F(BresenhamTest, OtherFunctionTest)
+TEST_F(BresenhamTest, SensorModelSetTest)
 {
     ranges::BresenhamsLine Bresenham(BLTestOMap, maxRange);
 
