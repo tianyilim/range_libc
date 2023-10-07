@@ -28,6 +28,12 @@
 - Move implementation into `cpp` files
 - Rename headers to `hpp`
 
+## 08/10/2023
+- Add extra tests to the repo
+- Conversion from WORLD to MAP frame was overhauled. Not sure why / how the previous version worked
+- Add analytic calculation for specific scenarios
+  - Can use this to quantify the noise of pixelation, and in the future, localization in general.
+
 ## 01/10/2023
 - Added a copy assignment constructor for OMap and made WorldValues members const.
 - Will not add copy assignment to `RangeMethod` because otherwise const members cannot be made const.
