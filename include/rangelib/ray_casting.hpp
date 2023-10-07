@@ -38,9 +38,7 @@ class RayMarching : public RangeMethod {
             float d = _distTransform.signedDistanceValue(px, py);
 
             if (d <= _distThreshold) {
-                float xd = px - x;
-                float yd = py - y;
-                return sqrtf(xd * xd + yd * yd);
+                return std::hypot(px - x, py - y);
             }
 
             t += std::max<float>(d * _stepCoeff, 1.0);
