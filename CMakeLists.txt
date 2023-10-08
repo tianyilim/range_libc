@@ -55,6 +55,10 @@ add_library(rangeUtils
 	src/RangeUtils.cpp
 )
 
+add_library(geometryUtils
+	src/geometry.cpp
+)
+
 # if(WITH_CUDA)
 # add_definitions(-DUSE_CUDA=1)
 # add_definitions(-DCHUNK_SIZE=${CHUNK_SIZE})
@@ -80,22 +84,25 @@ add_library(rangeUtils
 add_executable(rg_test
 	src/testDriver.cpp
 )
-target_link_libraries(rg_test lodepng_lib rangeUtils)
+target_link_libraries(rg_test lodepng_lib rangeUtils geometryUtils)
 
 # Testing only
 enable_testing()
 
 add_executable(
 	test_rangelib
+
 	test/test_omap.cpp
 	test/test_bl.cpp
 	test/test_glt.cpp
 	test/test_ray_marching.cpp
+	test/test_geom_utils.cpp
 )
 target_link_libraries(
 	test_rangelib
 	lodepng_lib
 	rangeUtils
+	geometryUtils
 	GTest::gtest_main
 )
 include(GoogleTest)
