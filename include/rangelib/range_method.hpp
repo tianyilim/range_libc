@@ -16,7 +16,7 @@ class RangeMethod {
     /// @brief Constructor.
     /// @param[in] m Input map
     /// @param[in] mr Max range of sensor
-    RangeMethod(OMap map, float maxRange)
+    RangeMethod(DistanceTransform map, float maxRange)
         : _distTransform(map),
           _maxRange(maxRange),
           _worldScale{_distTransform.worldValues().worldScale},

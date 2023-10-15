@@ -28,7 +28,7 @@ class GiantLUTCast : public RangeMethod {
     /// @param[in] m Input Occupancy Grid Map
     /// @param[in] mr Max range
     /// @param[in] td theta discretization
-    GiantLUTCast(OMap map, float maxRange, unsigned thetaDiscretization)
+    GiantLUTCast(DistanceTransform map, float maxRange, unsigned thetaDiscretization)
         : RangeMethod(map, maxRange),
           _lutHeight{map.height()},
           _lutWidth{map.width()},

@@ -8,7 +8,8 @@ namespace ranges {
 
 class RayMarching : public RangeMethod {
    public:
-    RayMarching(OMap map, float maxRange, float distThreshold = 0.0, float stepCoeff = 0.999)
+    RayMarching(DistanceTransform map, float maxRange, float distThreshold = 0.0,
+                float stepCoeff = 0.999)
         : RangeMethod(map, maxRange), _distThreshold{distThreshold}, _stepCoeff{stepCoeff}
     {
     }
