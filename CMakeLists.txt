@@ -61,7 +61,7 @@ add_library(geometryUtils SHARED
 	src/geometry.cpp
 )
 
-pybind11_add_module(rangelib SHARED pywrapper/rangelib_pybindings.cpp)
+pybind11_add_module(rangelib MODULE pywrapper/rangelib_pybindings.cpp)
 target_link_libraries(rangelib PUBLIC lodepng_lib rangeUtils geometryUtils)
 
 # if(WITH_CUDA)

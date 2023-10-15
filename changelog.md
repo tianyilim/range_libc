@@ -7,26 +7,36 @@
 - [ ] Test edge Map functionality in some way
 
 ### [Range Method](./include/rangelib/range_method.hpp)
+- [ ] Test sensor model functions
+- [ ] Test `numpy_` functions for each range method
+- [ ] Rename `numpy_` to be "batch" functions
 - [ ] Put sensor model into 1d vector for faster indexing
+- [ ] Change function signatures from vectors to work with pybind code (currently broken)
 
 ### [Bresenhams](./include/rangelib/bresenhams.hpp)
 - [ ] Add test for Map Coordinate transform
 
 ### [Ray Casting](./include/rangelib/ray_casting.hpp)
-- [ ] Fails equality test in [`test_ray_marching.cpp`](./test/test_ray_marching.cpp)
-- [ ] No idea if non-default values of world values work.
 
 ### [Giant LUT](./include/rangelib/lookup_table.hpp)
-- [ ] Non-default values of world values are broken in the test.
+
+### [Python Bindings](./pywrapper/rangelib_pybindings.cpp)
+- [ ] `setup.py` installation function so no need to run Python from the `build/lib` directory (and things can be imported everywhere)
+- [ ] Testing the wrapped python functions
 
 ### Functionality:
-- Better timing benchmarks that simulate real-world operation
-- Wrapper code to evaluate sensor model in some toy examples
-- Visualizations of the different sensor models and results they might give
+- [ ] Better timing benchmarks that simulate real-world operation
+- [ ] Visualizations of the different sensor models and results they might give
+- [ ] Wrap particle filter base class into C++ code
 
 ### Housekeeping
 - Move implementation into `cpp` files
-- Rename headers to `hpp`
+- Rename all headers to `hpp`
+
+## 15/10/2023
+- Fix theta error with ray marching (needed to call round instead of straight int cast)
+- Fix GLT test failing by increasing the theta_discretization
+- Add Python wrapper using `Pybind11`.
 
 ## 08/10/2023
 - Add extra tests to the repo

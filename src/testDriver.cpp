@@ -26,7 +26,7 @@ int main()
     // cube coords in map frame
     std::vector<geom::Point2d> points{{21, 21}, {99, 21}, {99, 99}, {21, 99}};
 
-    const float maxRange = 999;
+    const float maxRange = 50;
 
     ranges::OMap BLTestOMap(filename);
     BLTestOMap.setWorldValues(WorldVals);
@@ -35,6 +35,8 @@ int main()
     std::cout << BLTestOMap.height() << "x" << BLTestOMap.width() << std::endl;
     ranges::RayMarching RayMarching(BLTestOMap, maxRange, 0.01);
     // ranges::GiantLUTCast GiantLUTCast(BLTestOMap, maxRange, 180.0);
+
+    // TODO look into how the choice of theta discretization changes things
 
     // Let's view ranges
     for (float x : {0, 21}) {
