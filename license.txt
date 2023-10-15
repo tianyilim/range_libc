@@ -1,4 +1,4 @@
-Copyright 2017 Corey H. Walsh (corey.walsh11@gmail.com)
+Copyright 2017 Corey H. Walsh (corey.walsh11@gmail.com), modified by Tianyi Lim (0.tianyi.lim@gmail.com)
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
