@@ -16,7 +16,7 @@ class GiantLUTTest : public ::testing::Test {
     const std::string m_FILENAME = "../../maps/tests/symm_box.png";
 
     const float m_MAX_RANGE = 25.0f;
-    const unsigned m_THETA_DISC = 90;
+    const unsigned m_THETA_DISC = 180;  // this cannot be too low
 
     std::unique_ptr<ranges::OMap> m_GLTTestOMap;
     std::unique_ptr<ranges::GiantLUTCast> m_GiantLUT;
@@ -71,21 +71,21 @@ TEST_F(GiantLUTTest, ThetaDiscretizeTest)
     res = m_GiantLUT->discretize_theta(degToRad(0.0));
     EXPECT_EQ(res, 0);
     res = m_GiantLUT->discretize_theta(degToRad(90.0));
-    EXPECT_EQ(res, 23);
-    res = m_GiantLUT->discretize_theta(degToRad(-270.0));
-    EXPECT_EQ(res, 23);
-    res = m_GiantLUT->discretize_theta(degToRad(270.0));
-    EXPECT_EQ(res, 68);
-    res = m_GiantLUT->discretize_theta(degToRad(-90.0));
-    EXPECT_EQ(res, 68);
-    res = m_GiantLUT->discretize_theta(degToRad(180.0));
     EXPECT_EQ(res, 45);
+    res = m_GiantLUT->discretize_theta(degToRad(-270.0));
+    EXPECT_EQ(res, 45);
+    res = m_GiantLUT->discretize_theta(degToRad(270.0));
+    EXPECT_EQ(res, 135);
+    res = m_GiantLUT->discretize_theta(degToRad(-90.0));
+    EXPECT_EQ(res, 135);
+    res = m_GiantLUT->discretize_theta(degToRad(180.0));
+    EXPECT_EQ(res, 90);
     res = m_GiantLUT->discretize_theta(degToRad(360.0));
     EXPECT_EQ(res, 0);
     res = m_GiantLUT->discretize_theta(degToRad(319.25));
-    EXPECT_EQ(res, 80);
+    EXPECT_EQ(res, 160);
     res = m_GiantLUT->discretize_theta(degToRad(370.0));
-    EXPECT_EQ(res, 3);
+    EXPECT_EQ(res, 5);
 }
 
 TEST_F(GiantLUTTest, RangeTest)
