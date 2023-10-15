@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-PROJECT(range_lib
+PROJECT(range_lib_ray_casting
 	VERSION 0.1
 	DESCRIPTION "The ForzaETH fork of the RangeLibC ray-casting library"
 	LANGUAGES CXX)
@@ -42,24 +42,27 @@ else()
 	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 endif()
 
-add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-errno)
+add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-errno -O2 -fPIC)
 
 add_subdirectory(vendor/gflags)
 add_subdirectory(vendor/pybind11)
 
 include_directories(include vendor)
 
-add_library(lodepng_lib
+add_library(lodepng_lib SHARED
 	vendor/lodepng/lodepng.cpp
 )
 
-add_library(rangeUtils
+add_library(rangeUtils SHARED
 	src/RangeUtils.cpp
 )
 
-add_library(geometryUtils
+add_library(geometryUtils SHARED
 	src/geometry.cpp
 )
+
+pybind11_add_module(rangelib SHARED pywrapper/rangelib_pybindings.cpp)
+target_link_libraries(rangelib PUBLIC lodepng_lib rangeUtils geometryUtils)
 
 # if(WITH_CUDA)
 # add_definitions(-DUSE_CUDA=1)
