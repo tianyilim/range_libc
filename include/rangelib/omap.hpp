@@ -25,12 +25,12 @@ struct WorldValues {
     }
 
     // Implement default values
-    const float worldScale;
-    const float worldAngle;
-    const float worldOriginX;
-    const float worldOriginY;
-    const float worldSinAngle;
-    const float worldCosAngle;
+    const float worldScale;     ///< Resolution of the map, meters / pixel
+    const float worldAngle;     ///< Yaw (ccw rotation) of the lower-left pixel in the map
+    const float worldOriginX;   ///< X pose of the lower-left pixel in the map
+    const float worldOriginY;   ///< Y pose of the lower-left pixel in the map
+    const float worldSinAngle;  ///< Sine of worldAngle
+    const float worldCosAngle;  ///< Cosine of worldAngle
 
     inline bool operator==(const WorldValues &other) const
     {
@@ -66,7 +66,7 @@ class OMap {
     /// @brief Constructor from an image file
     /// @param[in] filename path to the image file
     /// @param[in] threshold occupancy threshold
-    OMap(std::string filename, float threshold = 128) : _filename(filename)
+    OMap(const std::string &filename, float threshold = 128) : _filename(filename)
     {
         unsigned error;
         unsigned char *image;
@@ -226,6 +226,9 @@ class OMap {
     ///@brief modifier view into _OccupancyGrid
     Grid_t &grid() { return _OccupancyGrid; }
 
+    const Grid_t &getGrid() { return grid(); }
+    void setGrid(const Grid_t &gridIn) { _OccupancyGrid = gridIn; }
+
     unsigned width() const { return _width; }
 
     unsigned height() const { return _height; }
@@ -272,7 +275,7 @@ class DistanceTransform : public OMap {
 
     ///@brief computes the distance transform of a given OMap
     ///@param[in] map Input OMap
-    DistanceTransform(OMap &map) : OMap(map)
+    DistanceTransform(const OMap &map) : OMap(map)
     {
         std::vector<std::size_t> grid_size({_width, _height});
         dt::MMArray<float, 2> f(grid_size.data());
@@ -325,6 +328,7 @@ class DistanceTransform : public OMap {
 
     /// @brief Const view into _SignedDistFunc
     const DistanceFunction_t &SDF() const { return _SDF; }
+    const DistanceFunction_t &getSDF() const { return SDF(); }
 
     ///@brief modifier view into _SignedDistFunc
     DistanceFunction_t &SDF() { return _SDF; }
