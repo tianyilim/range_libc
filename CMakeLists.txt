@@ -45,6 +45,8 @@ endif()
 add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-errno)
 
 add_subdirectory(vendor/gflags)
+add_subdirectory(vendor/pybind11)
+
 include_directories(include vendor)
 
 add_library(lodepng_lib

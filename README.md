@@ -25,6 +25,13 @@ This code was built in Ubuntu 22.04 with and without GPU support.
 
 ### Requirements
 
+Install PyBind11 to build the Python bindings to the C++ code.
+```bash
+git submodule update --init --recursive # fetch PyBind11 content
+pip install pybind11
+sudo apt install python3-dev cmake
+```
+
 TODO migrate cuda setup to another page
 
 For GPU support, execute the following if using Ubuntu 22.04. Taken from [Nvidia installation instructions](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html) for CUDA. Follow the guide if you have another distribution. Running these commands may take a while!
