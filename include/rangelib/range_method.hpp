@@ -30,8 +30,6 @@ class RangeMethod {
           _mapOriginY{(_worldOriginX * _worldSinAngle + _worldOriginY * _worldCosAngle) +
                       _distTransform.height() * _worldScale}
     {
-        std::cout << "World Origin X: " << _worldOriginX << " Y: " << _worldOriginY << std::endl;
-        std::cout << "  Map Origin X: " << _mapOriginX << " Y: " << _mapOriginY << std::endl;
     }
 
     virtual ~RangeMethod(){};

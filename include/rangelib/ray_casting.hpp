@@ -23,27 +23,23 @@ class RayMarching : public RangeMethod {
         float ray_direction_x = cosf(heading);
         float ray_direction_y = sinf(heading);
 
-        int px, py;
-
-        float t = 0.0;
-        while (t < _maxRange) {
-            px = x + ray_direction_x * t;
-            py = y + ray_direction_y * t;
+        float vecLength = 0.0;
+        while (vecLength < _maxRange) {
+            int px = std::round(x + ray_direction_x * vecLength);
+            int py = std::round(y + ray_direction_y * vecLength);
 
             if (px >= (int)_distTransform.width() || px < 0 || py < 0 ||
                 py >= (int)_distTransform.height()) {
                 return _maxRange;
             }
 
-            float d = _distTransform.signedDistanceValue(px, py);
-
-            if (d <= _distThreshold) {
+            float distToNearestObstacle = _distTransform.signedDistanceValue(px, py);
+            if (distToNearestObstacle <= _distThreshold) {
                 return std::hypot(px - x, py - y);
             }
 
-            t += std::max<float>(d * _stepCoeff, 1.0);
+            vecLength += std::max<float>(distToNearestObstacle * _stepCoeff, 1.0);
         }
-
         return _maxRange;
     }
 
