@@ -3,3 +3,7 @@ build/
 tmp/
 .vscode
 .cache
+.clang-format
+
+# ROS stuff
+COLCON_IGNORE
