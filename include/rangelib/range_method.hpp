@@ -151,13 +151,13 @@ class RangeMethod {
     /// @param[in] rays_per_particle
     /// @param[in] particles
     void eval_sensor_model(float *obs, float *ranges, double *outs, int rays_per_particle,
-                           int particles) const
+                           int num_particles) const
     {
         double weight;
         float r;  // observed ranges
         float d;  // expected values
 
-        for (int i = 0; i < particles; ++i) {
+        for (int i = 0; i < num_particles; ++i) {
             weight = 1.0;
             for (int j = 0; j < rays_per_particle; ++j) {
                 // Convert into map scale

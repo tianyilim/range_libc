@@ -1,3 +1,4 @@
+#include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -13,6 +14,26 @@
 namespace py = pybind11;
 
 namespace ranges {
+
+// Bindings for base virtual class
+class PyRangeMethodBaseClass : public RangeMethod {
+   public:
+    /* Inherit the constructors */
+    using RangeMethod::RangeMethod;
+
+    /* Trampoline code for redirection (need one for each virtual function) */
+    float calc_range(float x, float y, float heading) const override
+    {
+        PYBIND11_OVERRIDE_PURE(float,        /* Return type */
+                               RangeMethod,  /* Parent class */
+                               calc_range,   /* Name of function in C++ (must match Python name) */
+                               x, y, heading /* Argument(s) */
+        );
+    }
+
+    // Trailing comma needed for macro resolution
+    int memory() const override { PYBIND11_OVERRIDE_PURE(int, RangeMethod, memory, ); }
+};
 
 // Registers all rangelib C++ functions in Python.
 PYBIND11_MODULE(rangelib, m)
@@ -47,8 +68,6 @@ PYBIND11_MODULE(rangelib, m)
     PyOMap.def(py::init<const std::string &, float>(), py::arg("filepath"),
                py::arg("tolerance") = 128.0,
                "Construct an OMap from a PNG filepath and a occupancy tolerance.");
-    // PyOMap.def(py::init<const OMap &>(), "Copy construct an OMap.");
-    // PyOMap.def(py::init<OMap &&>(), "Move construct an OMap.");
     PyOMap.def("isOccupied", &OMap::isOccupied, py::arg("x"), py::arg("y"),
                "Return the occupancy at x, y");
     PyOMap.def("save", &OMap::save, py::arg("filename"), "Save map to an image file");
@@ -86,17 +105,55 @@ PYBIND11_MODULE(rangelib, m)
     PyDistanceTransform.doc() = "Distance Transform from rangelib";
 
     /// Range Method class
-    py::class_<RangeMethod> PyRangeMethod(m, "_RangeMethod");
-    PyRangeMethod.def(py::init<OMap, float>());
+    py::class_<RangeMethod, PyRangeMethodBaseClass> PyRangeMethod(m, "_RangeMethod");
+    PyRangeMethod.def(py::init<DistanceTransform, float>(), py::arg("map"), py::arg("maxRange"),
+                      "Range Method pure virtual base class. Do not call this directly.");
+    PyRangeMethod.def_property("distTransform", &RangeMethod::getMap, nullptr);
+    PyRangeMethod.def_property("maxRange", &RangeMethod::maxRange, nullptr);
+    PyRangeMethod.def("numpy_calc_range", &RangeMethod::numpy_calc_range, py::arg("ins"),
+                      py::arg("outs"), py::arg("num_casts"),
+                      "Wrapper function to call calc_range repeatedly. Indexing assumes a 3xn "
+                      "numpy array for the inputs and a 1xn numpy array of the outputs.");
+    PyRangeMethod.def("numpy_calc_range_angles", &RangeMethod::numpy_calc_range_angles,
+                      py::arg("ins"), py::arg("angles"), py::arg("outs"), py::arg("num_particles"),
+                      py::arg("num_angles"),
+                      "Wrapper function to call calc_range repeatedly. Indexing assumes 3 x "
+                      "num_particles array of sensor poses, 1 x num_angles array of query angles, "
+                      "1 x num_angles*num_particles array of output values.");
+    PyRangeMethod.def(
+        "set_sensor_model", &RangeMethod::set_sensor_model, py::arg("table"),
+        py::arg("table_width"),
+        "Sets a pre-calculated sensor model (table_width x table_width array). The "
+        "sensor model is the likelihood score of observing a particular measurement.");
+    PyRangeMethod.def(
+        "eval_sensor_model", &RangeMethod::eval_sensor_model, py::arg("observations"),
+        py::arg("ranges"), py::arg("outs"), py::arg("rays_per_particle"), py::arg("num_particles"),
+        "Evaluating the (discretized) sensor model is equivalent to a 2D array lookup.");
+    PyRangeMethod.def("calc_range_repeat_angles_eval_sensor_model",
+                      &RangeMethod::calc_range_repeat_angles_eval_sensor_model, py::arg("ins"),
+                      py::arg("angles"), py::arg("observations"), py::arg("weights"),
+                      py::arg("num_particles"), py::arg("num_angles"),
+                      "Function that calculates expected ranges for each particle and directly "
+                      "outputs particle weights");
+    PyRangeMethod.def("mapCoordinates", &RangeMethod::mapCoordinates, py::arg("x_world"),
+                      py::arg("y_world"), py::arg("z_world"),
+                      "Convert world coordinates into map-discretized values");
 
     /// Bresenham's Implementation
     py::class_<BresenhamsLine> PyBresenham(m, "Bresenham", PyRangeMethod);
+    PyBresenham.def(py::init<DistanceTransform, float>(), py::arg("map"), py::arg("maxRange"),
+                    "Bresenham's Line method constructor");
 
     /// Ray Marching Implementation
     py::class_<RayMarching> PyRayMarching(m, "RayMarching", PyRangeMethod);
+    PyRayMarching.def(py::init<DistanceTransform, float>(), py::arg("map"), py::arg("maxRange"),
+                      "Ray Casting method constructor");
 
     /// Giant Lookup Table implementation
     py::class_<GiantLUTCast> PyLookupTable(m, "GiantLUT", PyRangeMethod);
+    PyLookupTable.def(py::init<DistanceTransform, float, unsigned>(), py::arg("map"),
+                      py::arg("maxRange"), py::arg("theta_discretization"),
+                      "Giant Lookup Table method constructor");
 }
 
 }  // namespace ranges
