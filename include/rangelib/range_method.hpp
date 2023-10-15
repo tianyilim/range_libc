@@ -1,6 +1,7 @@
 #ifndef RANGELIB_RANGE_METHOD_HPP_
 #define RANGELIB_RANGE_METHOD_HPP_
 
+#include "eigen3/Eigen/Dense"
 #include "rangelib/omap.hpp"
 
 #define _EPSILON 0.00001
@@ -9,6 +10,10 @@
 namespace ranges {
 
 using Pose2Df_t = std::tuple<float, float, float>;
+using VectorFloat = Eigen::VectorXf;
+using VectorDouble = Eigen::VectorXd;
+using PosesFloat = Eigen::Matrix<float, 3, Eigen::Dynamic, Eigen::RowMajor>;
+using PosesDouble = Eigen::Matrix<double, 3, Eigen::Dynamic, Eigen::RowMajor>;
 
 /// @brief Parent class of all range methods
 class RangeMethod {
@@ -90,19 +95,21 @@ class RangeMethod {
     virtual int memory() const = 0;
 
     /// @brief Wrapper function to call calc_range repeatedly. Indexing assumes a 3xn numpy array
-    /// for the inputs and a 1xn numpy array of the outputs.
+    /// for the inputs and returns a 1D numpy array of the outputs.
     /// @param[in] ins (3 x num_casts) array of poses.
-    /// @param[out] outs (1 x num_casts) array of output ranges
-    /// @param[in] num_casts
-    void numpy_calc_range(float *ins, float *outs, int num_casts)
+    VectorFloat batchCalcRange(const Eigen::Ref<PosesFloat> ins)
     {
         // avoid allocation on every loop iteration
         float x, y, theta;
+        VectorFloat outs(ins.cols());
 
-        for (int i = 0; i < num_casts; ++i) {
-            std::tie(x, y, theta) = mapCoordinates(ins[i * 3], ins[i * 3 + 1], ins[i * 3 + 2]);
-            outs[i] = calc_range(x, y, theta) * _worldScale;
+        for (int i = 0; i < ins.cols(); ++i) {
+            const auto &currPose = ins.col(i);
+            std::tie(x, y, theta) = mapCoordinates(currPose(0), currPose(1), currPose(2));
+            outs(i) = calc_range(x, y, theta) * _worldScale;
         }
+
+        return outs;
     }
 
     /// @brief Wrapper function to call calc_range repeatedly.

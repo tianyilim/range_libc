@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cmath>
+#include <eigen3/Eigen/Dense>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -57,16 +58,21 @@ int main()
                 float analytic =
                     std::min(geom::distToPolygon({map_x, map_y}, map_heading, points), maxRange);
 
-                float ins[3] = {x, y, heading};
-                float bl[1] = {maxRange}, rm[1] = {maxRange}, glt[1] = {maxRange};
-                Bresenham.numpy_calc_range(ins, bl, 1);
-                RayMarching.numpy_calc_range(ins, rm, 1);
-                // GiantLUTCast.numpy_calc_range(ins, glt, 1);
+                ranges::VectorFloat glt(1);
+                ranges::PosesFloat ins(3, 1);
+
+                ins(0, 0) = x;
+                ins(0, 1) = y;
+                ins(0, 2) = heading;
+
+                ranges::VectorFloat bl = Bresenham.batchCalcRange(ins);
+                ranges::VectorFloat rm = RayMarching.batchCalcRange(ins);
+                // glt =  GiantLUTCast.numpy_calc_range(ins);
 
                 if (analytic != maxRange) {
                     std::cout << "Range at (map coords) x: " << map_x << " y: " << map_y
-                              << " heading: " << map_heading / M_PI * 180.0 << ": BL: " << bl[0]
-                              << " RM: " << rm[0] << " GLT: " << glt[0] << " Analytic: " << analytic
+                              << " heading: " << map_heading / M_PI * 180.0 << ": BL: " << bl(0)
+                              << " RM: " << rm(0) << " GLT: " << glt(0) << " Analytic: " << analytic
                               << std::endl;
                 }
             }

@@ -47,7 +47,8 @@ add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic -march=native -fno-math-
 add_subdirectory(vendor/gflags)
 add_subdirectory(vendor/pybind11)
 
-include_directories(include vendor)
+# You can change this path to point where eigen3 lives on your system
+include_directories(include vendor /usr/include/eigen3)
 
 add_library(lodepng_lib SHARED
 	vendor/lodepng/lodepng.cpp

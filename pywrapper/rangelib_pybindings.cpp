@@ -1,5 +1,6 @@
 #include <pybind11/cast.h>
 #include <pybind11/detail/common.h>
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -110,10 +111,10 @@ PYBIND11_MODULE(rangelib, m)
                       "Range Method pure virtual base class. Do not call this directly.");
     PyRangeMethod.def_property("distTransform", &RangeMethod::getMap, nullptr);
     PyRangeMethod.def_property("maxRange", &RangeMethod::maxRange, nullptr);
-    PyRangeMethod.def("numpy_calc_range", &RangeMethod::numpy_calc_range, py::arg("ins"),
-                      py::arg("outs"), py::arg("num_casts"),
-                      "Wrapper function to call calc_range repeatedly. Indexing assumes a 3xn "
-                      "numpy array for the inputs and a 1xn numpy array of the outputs.");
+    PyRangeMethod.def("batchCalcRange", &RangeMethod::batchCalcRange, py::arg("ins"),
+                      py::return_value_policy::move,
+                      "Wrapper function to call calc_range repeatedly. Input a 3xn "
+                      "numpy array for the inputs and get a 1xn numpy array of the outputs.");
     PyRangeMethod.def("numpy_calc_range_angles", &RangeMethod::numpy_calc_range_angles,
                       py::arg("ins"), py::arg("angles"), py::arg("outs"), py::arg("num_particles"),
                       py::arg("num_angles"),

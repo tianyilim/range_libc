@@ -29,7 +29,7 @@ Install PyBind11 to build the Python bindings to the C++ code.
 ```bash
 git submodule update --init --recursive # fetch PyBind11 content
 pip install pybind11
-sudo apt install python3-dev cmake
+sudo apt install python3-dev cmake libeigen3-dev
 ```
 
 TODO migrate cuda setup to another page
