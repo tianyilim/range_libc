@@ -30,6 +30,8 @@ Install PyBind11 to build the Python bindings to the C++ code.
 git submodule update --init --recursive # fetch PyBind11 content
 pip install pybind11
 sudo apt install python3-dev cmake libeigen3-dev
+
+pip3 install -e .	# installs rangelib here
 ```
 
 TODO migrate cuda setup to another page

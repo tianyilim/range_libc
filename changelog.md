@@ -21,8 +21,12 @@
 ### [Giant LUT](./include/rangelib/lookup_table.hpp)
 
 ### [Python Bindings](./pywrapper/rangelib_pybindings.cpp)
-- [ ] `setup.py` installation function so no need to run Python from the `build/lib` directory (and things can be imported everywhere)
-- [ ] Testing the wrapped python functions
+- [ ] (automated) testing for the wrapped python functions
+- [ ] Currently the build process puts the generated `.so` and `.egg-info` in the root directory. This is a bit ugly, although it works for now. If it was migrated into the `build/` folder it would be slightly cleaner.
+  - [ ] Document this behaviour in the README
+
+### Testing
+- [ ] Edit CMake such that tests are only built when TESTING flag is set.
 
 ### Functionality:
 - [ ] Better timing benchmarks that simulate real-world operation
@@ -32,6 +36,10 @@
 ### Housekeeping
 - Move implementation into `cpp` files
 - Rename all headers to `hpp`
+
+## 16/10/2023
+- Integrate `pybind11` with a `setup.py` which installs rangelib on the system
+- Add instructions to install these fiels
 
 ## 15/10/2023
 - Fix theta error with ray marching (needed to call round instead of straight int cast)

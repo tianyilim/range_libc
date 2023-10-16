@@ -7,3 +7,7 @@ tmp/
 
 # ROS stuff
 COLCON_IGNORE
+
+# python stuff
+*.egg-info*
+*.so
