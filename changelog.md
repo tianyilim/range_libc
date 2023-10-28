@@ -21,7 +21,7 @@
 ### [Giant LUT](./include/rangelib/lookup_table.hpp)
 
 ### [Python Bindings](./pywrapper/rangelib_pybindings.cpp)
-- [ ] (automated) testing for the wrapped python functions
+- [ ] add tests to python bindings
 
 ### CUDA Support
 - [ ] Clean up Ray Casting GPU
@@ -44,6 +44,7 @@
 - Moved the build artefacts from `setup.py` into the `pywrapper` folder
 - Update the interfaces for each method to run with Eigen + Numpy, add docs
 - Update tests with these interfaces
+- Introduced framework for python testing
 
 ## 16/10/2023
 - Integrate `pybind11` with a `setup.py` which installs rangelib on the system
