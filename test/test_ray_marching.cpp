@@ -6,7 +6,7 @@ class RayMarchingTest : public ::testing::Test {
    protected:
     void SetUp() override { RayMarchingTestOMap = ranges::OMap(filename); }
 
-    const std::string filename = "../../maps/tests/symm_box.png";
+    const std::string filename = "../maps/tests/symm_box.png";
 
     const float maxRange = 25.0f;
     ranges::OMap RayMarchingTestOMap;
@@ -51,14 +51,4 @@ TEST_F(RayMarchingTest, RangeTest)
     EXPECT_NEAR(RayMarching.calc_range(120, 0, 0), maxRange, 0.01);
     EXPECT_NEAR(RayMarching.calc_range(0, 120, 0), maxRange, 0.01);
     EXPECT_NEAR(RayMarching.calc_range(120, 120, 0), maxRange, 0.01);
-}
-
-TEST_F(RayMarchingTest, SensorModelSetTest)
-{
-    ranges::RayMarching RayMarching(RayMarchingTestOMap, maxRange);
-
-    double sensorModel[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
-    int tableWidth = 10;
-
-    EXPECT_NO_THROW(RayMarching.set_sensor_model(sensorModel, tableWidth));
 }

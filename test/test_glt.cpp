@@ -13,7 +13,7 @@ class GiantLUTTest : public ::testing::Test {
 
     inline float degToRad(float r) { return r * M_PI / 180.0; }
 
-    const std::string m_FILENAME = "../../maps/tests/symm_box.png";
+    const std::string m_FILENAME = "../maps/tests/symm_box.png";
 
     const float m_MAX_RANGE = 25.0f;
     const unsigned m_THETA_DISC = 180;  // this cannot be too low
@@ -110,12 +110,4 @@ TEST_F(GiantLUTTest, RangeTest)
     EXPECT_NEAR(m_GiantLUT->calc_range(120, 0, 0), m_MAX_RANGE, 0.01);
     EXPECT_NEAR(m_GiantLUT->calc_range(0, 120, 0), m_MAX_RANGE, 0.01);
     EXPECT_NEAR(m_GiantLUT->calc_range(120, 120, 0), m_MAX_RANGE, 0.01);
-}
-
-TEST_F(GiantLUTTest, SensorModelSetTest)
-{
-    double sensorModel[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
-    int tableWidth = 10;
-
-    EXPECT_NO_THROW(m_GiantLUT->set_sensor_model(sensorModel, tableWidth));
 }

@@ -6,7 +6,7 @@ class BresenhamTest : public ::testing::Test {
    protected:
     void SetUp() override { BLTestOMap = ranges::OMap(filename); }
 
-    const std::string filename = "../../maps/tests/symm_box.png";
+    const std::string filename = "../maps/tests/symm_box.png";
 
     const float maxRange = 25.0f;
     ranges::OMap BLTestOMap;
@@ -57,10 +57,9 @@ TEST_F(BresenhamTest, SensorModelSetTest)
 {
     ranges::BresenhamsLine Bresenham(BLTestOMap, maxRange);
 
-    double sensorModel[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 0};
-    int tableWidth = 10;
+    Eigen::Matrix2f sensorModel;
 
-    EXPECT_NO_THROW(Bresenham.set_sensor_model(sensorModel, tableWidth));
+    EXPECT_NO_THROW(Bresenham.setSensorModel(sensorModel));
 }
 
 TEST_F(BresenhamTest, MapToWorldConversion)

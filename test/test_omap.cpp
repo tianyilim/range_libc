@@ -88,7 +88,7 @@ TEST(OMapTest, DistTransformSizeConstructor)
 
 TEST(OMapTest, ImageConstructor)
 {
-    const std::string filename = "../../maps/tests/symm_box.png";
+    const std::string filename = "../maps/tests/symm_box.png";
     const int e_width = 120, e_height = 120;
 
     ranges::OMap FilepathOMap(filename);
@@ -119,7 +119,7 @@ TEST(OMapTest, ImageConstructor)
 
 TEST(OMapTest, DistTransformImageConstructor)
 {
-    const std::string filename = "../../maps/tests/symm_box.png";
+    const std::string filename = "../maps/tests/symm_box.png";
     const int e_width = 120, e_height = 120;
 
     ranges::OMap FileOMap(filename);
@@ -162,7 +162,7 @@ TEST(OMapTest, DistTransformImageConstructor)
 
 TEST(OMapTest, EdgeMapTest)
 {
-    const std::string filename = "../../maps/tests/symm_box.png";
+    const std::string filename = "../maps/tests/symm_box.png";
 
     ranges::OMap EdgeMap_OMap(filename);
 
