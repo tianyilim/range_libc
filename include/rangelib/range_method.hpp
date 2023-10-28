@@ -1,6 +1,9 @@
 #ifndef RANGELIB_RANGE_METHOD_HPP_
 #define RANGELIB_RANGE_METHOD_HPP_
 
+#include <cstddef>
+#include <stdexcept>
+
 #include "eigen3/Eigen/Dense"
 #include "rangelib/omap.hpp"
 
@@ -94,17 +97,21 @@ class RangeMethod {
 
     virtual int memory() const = 0;
 
-    /// @brief Wrapper function to call calc_range repeatedly. Indexing assumes a 3xn numpy array
-    /// for the inputs and returns a 1D numpy array of the outputs.
-    /// @param[in] ins (3 x num_casts) array of poses.
-    VectorFloat batchCalcRange(const Eigen::Ref<PosesFloat> ins)
-    {
-        // avoid allocation on every loop iteration
-        float x, y, theta;
-        VectorFloat outs(ins.cols());
+    /// @brief Wrapper function to call calc_range repeatedly.
 
-        for (int i = 0; i < ins.cols(); ++i) {
-            const auto &currPose = ins.col(i);
+    /// @param[in] ins (3 x N) array of poses.
+    /// @return (1xN) array of ranges.
+    VectorFloat batchCalcRange(const Eigen::Ref<const PosesFloat> poses) const
+    {
+        if (poses.rows() != 3) {
+            throw std::invalid_argument("Poses input must be 3xN");
+        }
+
+        float x, y, theta;
+        VectorFloat outs(poses.cols());
+
+        for (int i = 0; i < poses.cols(); ++i) {
+            const auto &currPose = poses.col(i);
             std::tie(x, y, theta) = mapCoordinates(currPose(0), currPose(1), currPose(2));
             outs(i) = calc_range(x, y, theta) * _worldScale;
         }
@@ -112,112 +119,146 @@ class RangeMethod {
         return outs;
     }
 
-    /// @brief Wrapper function to call calc_range repeatedly.
-    /// @param[in] ins (3 x num_particles) array of poses (of sensor)
-    /// @param[in] angles (1 x num_angles) array of query angles
-    /// @param[out] outs (1 x num_angles*num_particles) array of ranges. Organized with
-    /// num_particles as major index.
-    /// @param[in] num_particles
-    /// @param[in] num_angles
-    void numpy_calc_range_angles(float *ins, float *angles, float *outs, int num_particles,
-                                 int num_angles)
+    ///@brief Wrapper function to call calc_range repeatedly on a range of poses and angles.
+    /// Returns in pose-major order, ie. for input `[P1 P2], [A1 A2 A3]`, the output will be ordered
+    /// like `[P1A1 P1A2 P1A3 P2A1 P2A2 P2A3]`.
+    ///
+    ///@param poses (3 x N) array of poses.
+    ///@param angles (1 x M) array of query angles.
+    ///@return VectorFloat (1xNM) array of ranges in "pose-major" order.
+    VectorFloat batchCalcRangeAngles(const Eigen::Ref<const PosesFloat> poses,
+                                     const Eigen::Ref<const VectorFloat> angles) const
     {
-        // avoid allocation on every loop iteration
+        if (poses.rows() != 3) {
+            throw std::invalid_argument("Poses input must be 3xN");
+        }
+
         float x, y, theta;
+        const auto numPoses = poses.cols();
+        const auto numAngles = angles.size();
+        VectorFloat outs(numPoses * numAngles);
 
-        for (int i = 0; i < num_particles; ++i) {
-            std::tie(x, y, theta) = mapCoordinates(ins[i * 3], ins[i * 3 + 1], ins[i * 3 + 2]);
+        for (int i = 0; i < numPoses; ++i) {
+            const auto &currPose = poses.col(i);
+            std::tie(x, y, theta) = mapCoordinates(currPose(0), currPose(1), currPose(2));
 
-            for (int a = 0; a < num_angles; ++a) {
-                outs[i * num_angles + a] = calc_range(x, y, theta - angles[a]) * _worldScale;
+            for (int j = 0; j < numAngles; ++j) {
+                const auto currAngleOffset = angles(j);
+                outs(i * numAngles + j) = calc_range(x, y, theta - currAngleOffset) * _worldScale;
             }
         }
+
+        return outs;
     }
 
-    /// @brief Sets a pre-calculated sensor model from numpy. The sensor model is the likelihood
+    ///@brief Sets a pre-calculated sensor model from numpy. The sensor model is the likelihood
     /// score of observing a particular measurement.
-    /// @param[in] table
-    /// @param[in] table_width
-    void set_sensor_model(double *table, int table_width)
+    ///
+    ///@throws std::invalid argument if input is not square
+    ///@param[in] sensorModel a NxN matrix
+    void setSensorModel(
+        const Eigen::Ref<const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> sensorModel)
     {
-        // TODO convert into 1d vector
-        // convert the sensor model from a numpy array to a vector array
-        for (int i = 0; i < table_width; ++i) {
-            std::vector<double> table_row;
-            for (int j = 0; j < table_width; ++j) {
-                table_row.push_back(table[table_width * i + j]);
-            }
-            _sensorModel.push_back(table_row);
+        if (sensorModel.rows() != sensorModel.cols()) {
+            throw std::invalid_argument(
+                "Sensor Model must have the same number of rows and columns!");
         }
+
+        _sensorModel = sensorModel;
     }
 
-    /// @brief Evaluating the (discretized) sensor model is equivalent to a 2D array lookup.
-    /// @param[in] obs
-    /// @param[in] ranges
-    /// @param[in] outs
-    /// @param[in] rays_per_particle
-    /// @param[in] particles
-    void eval_sensor_model(float *obs, float *ranges, double *outs, int rays_per_particle,
-                           int num_particles) const
+    ///@brief Evaluates how likely an expected range is, based on the observed range and the sensor
+    /// model. Equivalent to a 2d array lookup.
+    ///
+    ///@param observedRanges (1 x N) array of ranges observed by a sensor.
+    ///@param expectedRanges (1 x N) array of ranges computed by rangelib.
+    ///@throws std::invalid argument if input arrays do not have same size
+    ///@throws std::runtime_error if sensor model has not been initialized
+    ///@return a likelihood as a float.
+    float evalSensorModel(const Eigen::Ref<const VectorFloat> observedRanges,
+                          const Eigen::Ref<const VectorFloat> expectedRanges) const
     {
-        double weight;
-        float r;  // observed ranges
-        float d;  // expected values
-
-        for (int i = 0; i < num_particles; ++i) {
-            weight = 1.0;
-            for (int j = 0; j < rays_per_particle; ++j) {
-                // Convert into map scale
-                r = obs[j] * _invWorldScale;
-                d = ranges[i * rays_per_particle + j] * _invWorldScale;
-
-                // Clamp
-                r = std::min<float>(std::max<float>(r, 0.0), (float)_sensorModel.size() - 1.0);
-                d = std::min<float>(std::max<float>(d, 0.0), (float)_sensorModel.size() - 1.0);
-
-                // Discretize and evaluate
-                weight *= _sensorModel[(int)r][(int)d];
-            }
-            outs[i] = weight;  // weight each particle
+        if (observedRanges.size() != expectedRanges.size()) {
+            throw std::invalid_argument("Observations and Ranges must have same dimensions");
         }
+
+        if (_sensorModel.rows() == 0) {
+            throw std::runtime_error("The sensor model has size 0. Has it been initialized?");
+        }
+
+        const auto numRanges = observedRanges.size();
+
+        float weight = 1.0;
+        float observedRange, expectedRange;
+        for (int i = 0; i < numRanges; ++i) {
+            // Convert to map scale
+            observedRange = observedRanges(i) * _invWorldScale;
+            expectedRange = expectedRanges(i) * _invWorldScale;
+
+            // Clamp to size of sensor model array
+            observedRange = std::min(std::max(observedRange, 0.0f), float(_sensorModel.rows() - 1));
+            expectedRange = std::min(std::max(expectedRange, 0.0f), float(_sensorModel.cols() - 1));
+
+            weight *= _sensorModel(int(observedRange), int(expectedRange));
+        }
+
+        return weight;
     }
 
-    /// @brief Function that calculates expected ranges for each particle and directly outputs
+    ///@brief Evaluates how likely a set of expected ranges corresponding multiple particles are,
+    /// based on the observed ranges and the sensor model.
+    ///
+    ///@param observedRanges (1 x N) array of ranges observed by a sensor.
+    ///@param expectedRangesPerParticle (1 x N*numParticles) "pose-major" array of ranges computed
+    /// by rangelib. This is usually the output of batchCalcRangeAngles.
+    ///@throws std::invalid argument if expectedRangesPerParticle.size is not cleanly divisible by
+    /// observedRanges.size, i.e. numParticles is not obtainable.
+    ///@return (1 x numParticles) vector of particle weights
+    VectorFloat batchEvalSensorModel(
+        const Eigen::Ref<const VectorFloat> observedRanges,
+        const Eigen::Ref<const VectorFloat> expectedRangesPerParticle) const
+    {
+        const size_t numObservations = observedRanges.size();
+        if (expectedRangesPerParticle.size() % numObservations != 0) {
+            throw std::invalid_argument(
+                "Input Expected ranges must be evenly divisible by number of observations!");
+        }
+        const size_t numParticles = expectedRangesPerParticle.size() / numObservations;
+
+        VectorFloat outs(numParticles);
+
+        for (size_t particleIdx = 0; particleIdx < numParticles; ++particleIdx) {
+            const auto startIdx = numObservations * particleIdx;
+            const auto weight = evalSensorModel(
+                observedRanges, expectedRangesPerParticle.segment(startIdx, numObservations));
+
+            outs(particleIdx) = weight;
+        }
+
+        return outs;
+    }
+
+    ///@brief Function that calculates expected ranges for each particle and directly outputs
     /// particle weights
-    /// @param ins
-    /// @param angles
-    /// @param obs
-    /// @param weights
-    /// @param num_particles
-    /// @param num_angles
-    void calc_range_repeat_angles_eval_sensor_model(float *ins, float *angles, float *obs,
-                                                    double *weights, int num_particles,
-                                                    int num_angles)
+    ///
+    ///@param poses (3 x N) array of poses.
+    ///@param angles (1 x M) array of query angles.
+    ///@param observedRanges (1 x M) array of ranges observed by a sensor.
+    ///@throws std::invalid_argument if size of angles != size of observedRanges
+    ///@return 1xN array of weights of each particle
+    VectorFloat batchCalcParticleWeights(const Eigen::Ref<const PosesFloat> poses,
+                                         const Eigen::Ref<const VectorFloat> angles,
+                                         const Eigen::Ref<const VectorFloat> observedRanges) const
     {
-        float x, y, theta;
-        double weight;
-        float r;  // observed ranges
-        float d;  // expected values
-
-        for (int particleIdx = 0; particleIdx < num_particles; ++particleIdx) {
-            std::tie(x, y, theta) = mapCoordinates(ins[particleIdx * 3], ins[particleIdx * 3 + 1],
-                                                   ins[particleIdx * 3 + 2]);
-
-            weight = 1.0;
-            for (int angleIdx = 0; angleIdx < num_angles; ++angleIdx) {
-                // Convert into map scale
-                r = obs[angleIdx] * _invWorldScale;
-                d = calc_range(x, y, theta - angles[angleIdx]);
-
-                // Clamp
-                r = std::min<float>(std::max<float>(r, 0.0), (float)_sensorModel.size() - 1.0);
-                d = std::min<float>(std::max<float>(d, 0.0), (float)_sensorModel.size() - 1.0);
-
-                // Discretize and evaluate
-                weight *= _sensorModel[(int)r][(int)d];
-            }
-            weights[particleIdx] = weight;
+        if (angles.size() != observedRanges.size()) {
+            throw std::invalid_argument(
+                "Number of query angles must correspond to number of observed ranges!");
         }
+
+        VectorFloat ranges = batchCalcRangeAngles(poses, angles);
+        VectorFloat vals = batchEvalSensorModel(observedRanges, ranges);
+
+        return vals;
     }
 
     // this is to compute a lidar sensor model using radial (calc_range_pair) optimizations
@@ -260,7 +301,7 @@ class RangeMethod {
     }
 
     /// @brief Convert world coordinates into map-discretized values
-    inline Pose2Df_t mapCoordinates(float x_world, float y_world, float theta_world)
+    inline Pose2Df_t mapCoordinates(float x_world, float y_world, float theta_world) const
     {
         float thetaMap = -(theta_world - _worldAngle);
         float xMap =
@@ -286,7 +327,7 @@ class RangeMethod {
     const float _mapOriginX;  ///< x coords of top left px of map (rangelibc origin) in world frame
     const float _mapOriginY;  ///< y coords of top left px of map (rangelibc origin) in world frame
 
-    std::vector<std::vector<double>> _sensorModel;
+    Eigen::MatrixXf _sensorModel;
 };
 
 }  // namespace ranges

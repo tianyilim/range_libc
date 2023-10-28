@@ -111,31 +111,53 @@ PYBIND11_MODULE(rangelib, m)
                       "Range Method pure virtual base class. Do not call this directly.");
     PyRangeMethod.def_property("distTransform", &RangeMethod::getMap, nullptr);
     PyRangeMethod.def_property("maxRange", &RangeMethod::maxRange, nullptr);
-    PyRangeMethod.def("batchCalcRange", &RangeMethod::batchCalcRange, py::arg("ins"),
+
+    PyRangeMethod.def("batchCalcRange", &RangeMethod::batchCalcRange, py::arg("poses"),
                       py::return_value_policy::move,
                       "Wrapper function to call calc_range repeatedly. Input a 3xn "
                       "numpy array for the inputs and get a 1xn numpy array of the outputs.");
-    PyRangeMethod.def("numpy_calc_range_angles", &RangeMethod::numpy_calc_range_angles,
-                      py::arg("ins"), py::arg("angles"), py::arg("outs"), py::arg("num_particles"),
-                      py::arg("num_angles"),
-                      "Wrapper function to call calc_range repeatedly. Indexing assumes 3 x "
-                      "num_particles array of sensor poses, 1 x num_angles array of query angles, "
-                      "1 x num_angles*num_particles array of output values.");
+
     PyRangeMethod.def(
-        "set_sensor_model", &RangeMethod::set_sensor_model, py::arg("table"),
-        py::arg("table_width"),
-        "Sets a pre-calculated sensor model (table_width x table_width array). The "
+        "batchCalcRangeAngles", &RangeMethod::batchCalcRangeAngles, py::arg("poses"),
+        py::arg("angles"), py::return_value_policy::move,
+        "Wrapper function to call calc_range repeatedly on a 3xN numpy array of poses and 1xM "
+        "numpy array of angles. Returns a 1xNM array of ranges in pose-major order, ie. for input "
+        "`[P1 P2], [A1 A2 A3]`, the output will be ordered like `[P1A1 P1A2 P1A3 P2A1 P2A2 P2A3]`");
+
+    PyRangeMethod.def(
+        "setSensorModel", &RangeMethod::setSensorModel, py::arg("sensorModel"),
+        "Sets a pre-calculated sensor model (N x N array). The "
         "sensor model is the likelihood score of observing a particular measurement.");
+
+    PyRangeMethod.def("evalSensorModel", &RangeMethod::evalSensorModel, py::arg("observedRanges"),
+                      py::arg("expectedRanges"), py::return_value_policy::move,
+                      "Evaluates how likely an expected range is, based on the observed range and "
+                      "the sensor model. Equivalent to a 2d array lookup. observedRanges is a "
+                      "(1xN) array of ranges observed by a sensor. expectedRanges is a (1xN) array "
+                      "of ranges computed by rangelib. Returns a likelihood as a float.");
+
     PyRangeMethod.def(
-        "eval_sensor_model", &RangeMethod::eval_sensor_model, py::arg("observations"),
-        py::arg("ranges"), py::arg("outs"), py::arg("rays_per_particle"), py::arg("num_particles"),
-        "Evaluating the (discretized) sensor model is equivalent to a 2D array lookup.");
-    PyRangeMethod.def("calc_range_repeat_angles_eval_sensor_model",
-                      &RangeMethod::calc_range_repeat_angles_eval_sensor_model, py::arg("ins"),
-                      py::arg("angles"), py::arg("observations"), py::arg("weights"),
-                      py::arg("num_particles"), py::arg("num_angles"),
+        "batchEvalSensorModel", &RangeMethod::batchEvalSensorModel, py::arg("observedRanges"),
+        py::arg("expectedRangesPerParticle"), py::return_value_policy::move,
+        " Evaluates how likely a set of expected ranges corresponding multiple particles are, "
+        "based on the observed ranges and the sensor model. observedRanges: (1 x N) array of "
+        "ranges observed by a sensor. expectedRangesPerParticle: (1 x N * numParticles) "
+        "\"pose-major\" array of ranges computed by rangelib. This is usually the output of "
+        "batchCalcRangeAngles. @throws std::invalid argument if expectedRangesPerParticle.size is "
+        "not cleanly divisible by observedRanges.size, i.e.numParticles is not obtainable. returns "
+        "(1 x numParticles)vector of particle weights.");
+
+    PyRangeMethod.def("batchCalcParticleWeights", &RangeMethod::batchCalcParticleWeights,
+                      py::arg("poses"), py::arg("angles"), py::arg("observedRanges"),
+                      py::return_value_policy::move,
                       "Function that calculates expected ranges for each particle and directly "
-                      "outputs particle weights");
+                      "outputs particle weights. "
+                      "poses: (3 x N) array of poses. "
+                      "angles: (1 x M) array of query angles. "
+                      "observedRanges: (1 x M) array of ranges observed by a sensor. "
+                      "@throws std::invalid_argument if size of angles != size of observedRanges. "
+                      "returns 1xN array of weights of each particle.");
+
     PyRangeMethod.def("mapCoordinates", &RangeMethod::mapCoordinates, py::arg("x_world"),
                       py::arg("y_world"), py::arg("z_world"),
                       "Convert world coordinates into map-discretized values");

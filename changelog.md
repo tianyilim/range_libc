@@ -22,8 +22,6 @@
 
 ### [Python Bindings](./pywrapper/rangelib_pybindings.cpp)
 - [ ] (automated) testing for the wrapped python functions
-- [ ] Currently the build process puts the generated `.so` and `.egg-info` in the root directory. This is a bit ugly, although it works for now. If it was migrated into the `build/` folder it would be slightly cleaner.
-  - [ ] Document this behaviour in the README
 
 ### Testing
 - [ ] Edit CMake such that tests are only built when TESTING flag is set.
@@ -36,6 +34,11 @@
 ### Housekeeping
 - [ ] Move implementation into `cpp` files
 - [ ] Rename all headers to `hpp`
+
+## 28/10/2023
+- Moved the build artefacts from `setup.py` into the `pywrapper` folder
+- Update the interfaces for each method to run with Eigen + Numpy, add docs
+- Update tests with these interfaces
 
 ## 16/10/2023
 - Integrate `pybind11` with a `setup.py` which installs rangelib on the system
