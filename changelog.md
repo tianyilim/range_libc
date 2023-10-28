@@ -34,8 +34,8 @@
 - [ ] Wrap particle filter base class into C++ code
 
 ### Housekeeping
-- Move implementation into `cpp` files
-- Rename all headers to `hpp`
+- [ ] Move implementation into `cpp` files
+- [ ] Rename all headers to `hpp`
 
 ## 16/10/2023
 - Integrate `pybind11` with a `setup.py` which installs rangelib on the system
