@@ -1,31 +1,35 @@
 # RangeLibc: Modernized
+- [RangeLibc: Modernized](#rangelibc-modernized)
+	- [Building the Code](#building-the-code)
+		- [Running tests](#running-tests)
+	- [CUDA setup](#cuda-setup)
+	- [Cite](#cite)
+	- [Code structure](#code-structure)
+	- [RangeLibc Algorithms Overview](#rangelibc-algorithms-overview)
+		- [Bresenham's Line (BL)](#bresenhams-line-bl)
+		- [Ray Marching (RM/RMGPU)](#ray-marching-rmrmgpu)
+			- [Pseudocode:](#pseudocode)
+			- [Analysis](#analysis)
+		- [Compressed Directional Distance Transform (CDDT/PCDDT) (ours)](#compressed-directional-distance-transform-cddtpcddt-ours)
+			- [Pseudocode:](#pseudocode-1)
+			- [Analysis](#analysis-1)
+		- [Giant Lookup Table (GLT)](#giant-lookup-table-glt)
+			- [Pseudocode:](#pseudocode-2)
+			- [Analysis](#analysis-2)
+	- [References](#references)
 
 > **NOTE** @maintainers (Nic/Edo): This remote points to a fork of RangeLibc on TY's personal github for now. But, creating a submodule on the git.ee servers when possible would be ideal. _(or, you can give me free GH stars)_
 
-The development log can be found [here](./changelog.md).
-
-**Repo Roadmap**
-- [ ] Add tests
-  - [ ] Test individual functions within each class / rangemethod
-  - [ ] OMap and DistanceTransform need some toy input to be tested
-- [ ] Refactor OMap class, needs some thought
-- [ ] Split the different range methods into different files
-
-- [ ] Instructions to compile with/without CUDA
-- [ ] Add benchmark code
-- [ ] Make improvements/modernization to underlying algos
-- [ ] Update code structure
+The development log and roadmap can be found [here](./changelog.md).
 
 ---
 This library provides for different implementations of 2D raycasting for 2D occupancy grids, including the Compressed Directional Distance Transform (CDDT) algorithm as proposed in [this publication](http://arxiv.org/abs/1705.01167). The code is written and optimized in C++, and Python wrappers are also provided.
 
 ## Building the Code
 
-This code was built in Ubuntu 22.04 with and without GPU support.
+This code was built in Ubuntu 22.04, currently without GPU support.
 
-### Requirements
-
-Install PyBind11 to build the Python bindings to the C++ code.
+This command builds the C++ executables, the Python bindings, and the tests.
 ```bash
 git submodule update --init --recursive # fetch PyBind11 content
 pip install pybind11
@@ -34,6 +38,26 @@ sudo apt install python3-dev cmake libeigen3-dev
 cd pywrapper		# be in the pywrapper folder
 pip3 install -e .	# installs rangelib here
 ```
+
+### Running tests
+
+Assuming you have just built the code, the build artefacts are in `pywrapper/build`.
+
+The following instructions assume you are in the root directory of this repo.
+
+To run C++ tests:
+```bash
+./pywrapper/build/temp.linux-x86_64-3.10/rangelib/test_rangelib
+```
+
+To run Python tests:
+```bash
+python3 -m unittest discover -s test/pytest
+```
+
+Make an issue on this repo if any of the tests fail.
+
+## CUDA setup
 
 TODO migrate cuda setup to another page
 
@@ -74,40 +98,6 @@ $ nvcc --version
   Build cuda_12.2.r12.2/compiler.33191640_0
 ```
 
-### C++ code
-
-```bash
-# clone the repository
-git clone git@github.com:tianyilim/range_libc.git
-cd range_libc
-mkdir build
-cd build
-cmake ..
-make
-```
-
-### Python Wrappers
-
-TODO - test and run this
-
-To build the code and its associated Python wrappers for use in Python code, do the following. You may have to install Cython if you do not already have it on your system.
-
-```bash
-# clone the repository
-git clone git@github.com:tianyilim/range_libc.git
-cd range_libc_dist/pywrapper
-# for an in place build, do this:
-python setup.py build_ext --inplace
-# for a system wide install, do this:
-python setup.py install
-# to compile with the GPU kernels, do this:
-WITH_CUDA=ON python setup.py install
-# this should take a few seconds to run
-python test.py
-```
-
-To see example usage of the Python wrappers (using the ROS specific helpers) see [https://github.com/mit-racecar/particle_filter](https://github.com/mit-racecar/particle_filter). See the [/docs](/docs) folder for documentation.
-
 ## Cite
 
 This repo is a modification to the original `rangelibc` [publication](http://arxiv.org/abs/1705.01167).
@@ -124,11 +114,6 @@ This repo is a modification to the original `rangelibc` [publication](http://arx
 `TODO` -- add here
 
 ## RangeLibc Algorithms Overview
-
-  * [Bresenham's Line (BL)](#bresenhams-line-bl)
-  * [Ray Marching (RM/RMGPU)](#ray-marching-rm)
-  * [Compressed Directional Distance Transform (CDDT/PCDDT)](#compressed-directional-distance-transform-cddt-ours)
-  * [Giant Lookup Table (GLT)](#giant-lookup-table-glt)
 
 ![Range Method Performance Comparison](./media/comparison.png)
 

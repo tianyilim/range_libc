@@ -23,8 +23,13 @@
 ### [Python Bindings](./pywrapper/rangelib_pybindings.cpp)
 - [ ] (automated) testing for the wrapped python functions
 
+### CUDA Support
+- [ ] Clean up Ray Casting GPU
+- [ ] Add instructions to compile with CUDA
+
 ### Testing
 - [ ] Edit CMake such that tests are only built when TESTING flag is set.
+- [ ] Edit tests such that they always point to the correct directories to open lodepng
 
 ### Functionality:
 - [ ] Better timing benchmarks that simulate real-world operation

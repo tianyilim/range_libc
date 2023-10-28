@@ -1,6 +1,7 @@
-paper/
+paper/**
 build/
-tmp/
+tmp/**
+
 .vscode
 .cache
 .clang-format
@@ -8,6 +9,8 @@ tmp/
 # ROS stuff
 COLCON_IGNORE
 
-# python stuff
+# python build artefacts
 *.egg-info*
 *.so
+__pycache__/
+*.pyc
