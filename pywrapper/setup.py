@@ -135,7 +135,7 @@ setup(
     author_email="0.tianyi.lim@gmail.com",
     description="2D ray-casting utilities in C++ and Python",
     long_description="",
-    ext_modules=[CMakeExtension("rangelib")],
+    ext_modules=[CMakeExtension("rangelib", sourcedir="..")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},
