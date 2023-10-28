@@ -31,6 +31,7 @@ git submodule update --init --recursive # fetch PyBind11 content
 pip install pybind11
 sudo apt install python3-dev cmake libeigen3-dev
 
+cd pywrapper		# be in the pywrapper folder
 pip3 install -e .	# installs rangelib here
 ```
 
