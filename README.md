@@ -32,7 +32,7 @@ This code was built in Ubuntu 22.04, currently without GPU support.
 This command builds the C++ executables, the Python bindings, and the tests.
 ```bash
 git submodule update --init --recursive # fetch PyBind11 content
-pip install pybind11
+pip install pybind11 shapely
 sudo apt install python3-dev cmake libeigen3-dev
 
 cd pywrapper		# be in the pywrapper folder
