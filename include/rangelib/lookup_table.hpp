@@ -50,7 +50,8 @@ class GiantLUTCast : public RangeMethod {
 
 #if _GIANT_LUT_SHORT_DATATYPE
                     r = std::min(_maxRange, r);
-                    uint16_t val = r * _limitsDivMax;
+                    r *= _limitsDivMax;  // clamp to uint16_t
+                    uint16_t val = r;
                     _GiantLUT[getLutIdx(x, y, i)] = val;
 #else
                     _GiantLUT[getLutIdx(x, y, i)] = r;
@@ -73,14 +74,12 @@ class GiantLUTCast : public RangeMethod {
     {
         theta = fmod(theta, M_2PI);
         // fmod does not wrap the angle into the positive range, so this will fix that if necessary
-        if (theta < 0.0) theta += M_2PI;
+        while (theta < 0.0) {
+            theta += M_2PI;
+        }
 
-#if _USE_FAST_ROUND == 1
-        int rounded = int(theta * _thetaDiscretization_div_M_2PI + 0.5);
-#else
         int rounded = (int)roundf(theta * _thetaDiscretization_div_M_2PI);
-#endif
-        // perhaps keep angle between (0, _thetaDiscretization-1).
+        // keep angle between (0, _thetaDiscretization-1).
         return rounded % _thetaDiscretization;
     }
 
@@ -93,7 +92,7 @@ class GiantLUTCast : public RangeMethod {
 
         size_t idx = getLutIdx((size_t)x, (size_t)y, discretize_theta(heading));
 #if _GIANT_LUT_SHORT_DATATYPE
-        return _GiantLUT[idx] * _maxDivLimits;
+        return float(_GiantLUT[idx] * _maxDivLimits);
 #else
         return _GiantLUT[idx];
 #endif
